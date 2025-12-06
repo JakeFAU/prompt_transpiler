@@ -5,6 +5,7 @@ This module defines the core data structures used to represent model providers,
 prompt styles, and model configurations. It uses `attrs` for data classes and
 `marshmallow` for serialization/deserialization.
 """
+
 from enum import Enum
 from typing import Any, TypedDict
 
@@ -20,15 +21,19 @@ class Examples(TypedDict):
         input (str): The input text for the example.
         output (str): The expected output text for the example.
     """
+
     input: str
     output: str
+
 
 class ExampleSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `Examples` TypedDict.
     """
+
     input = ma.fields.Str(required=True)
     output = ma.fields.Str(required=True)
+
 
 class ModelProviderType(str, Enum):
     """
@@ -38,8 +43,10 @@ class ModelProviderType(str, Enum):
         API: Represents API-based providers like OpenAI, Gemini, Anthropic.
         HUGGINGFACE: Represents Hugging Face models.
     """
-    API = "api"             # OpenAI / Gemini / Anthropic
+
+    API = "api"  # OpenAI / Gemini / Anthropic
     HUGGINGFACE = "huggingface"
+
 
 class PromptStyle(str, Enum):
     """
@@ -50,9 +57,11 @@ class PromptStyle(str, Enum):
         XML: XML tag based prompting (preferred by Anthropic).
         PLAIN: Plain text prompting (often used for older HF models).
     """
-    MARKDOWN = "markdown"   # OpenAI / Gemini prefer this
-    XML = "xml"             # Anthropic prefers <instructions> tags
-    PLAIN = "plain"         # Older HF models
+
+    MARKDOWN = "markdown"  # OpenAI / Gemini prefer this
+    XML = "xml"  # Anthropic prefers <instructions> tags
+    PLAIN = "plain"  # Older HF models
+
 
 @define(kw_only=True)
 class Provider:
@@ -64,14 +73,17 @@ class Provider:
         provider_type (ModelProviderType): The type of the provider (API or HuggingFace).
         metadata (dict[str, Any]): Additional metadata associated with the provider.
     """
+
     provider: str = field(validator=validators.instance_of(str))
     provider_type: ModelProviderType = field(validator=validators.instance_of(ModelProviderType))
     metadata: dict[str, Any] = field(factory=dict, validator=validators.instance_of(dict))
+
 
 class ProviderSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `Provider` objects.
     """
+
     provider = ma.fields.Str(required=True)
     provider_type = ma.fields.Enum(ModelProviderType, by_value=True, required=True)
     metadata = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Raw())
@@ -90,6 +102,7 @@ class ProviderSchema(ma.Schema):
         """
         return Provider(**data)
 
+
 @define(kw_only=True)
 class Model:
     """
@@ -104,6 +117,7 @@ class Model:
         supports_json_mode (bool): Whether the model supports JSON mode output.
         prompting_tips (str): Specific tips or instructions for prompting this model.
     """
+
     provider: Provider = field(validator=validators.instance_of(Provider))
     model_name: str = field(validator=validators.instance_of(str))
     supports_system_messages: bool = field(validator=validators.instance_of(bool))
@@ -113,10 +127,12 @@ class Model:
     prompting_tips: str = field(validator=validators.instance_of(str))
     metadata: dict[str, Any] = field(factory=dict, validator=validators.instance_of(dict))
 
+
 class ModelSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `Model` objects.
     """
+
     provider = ma.fields.Nested(ProviderSchema, required=True)
     model_name = ma.fields.Str(required=True)
     supports_system_messages = ma.fields.Bool(required=True)
@@ -140,6 +156,7 @@ class ModelSchema(ma.Schema):
         """
         return Model(**data)
 
+
 @define(kw_only=True)
 class IntermediateRepresentationMeta:
     """
@@ -149,13 +166,16 @@ class IntermediateRepresentationMeta:
         source_model (Model): The model that the prompt was originally designed for.
         target_model (Model): The model that the prompt is being compiled for.
     """
+
     source_model: Model = field(validator=validators.instance_of(Model))
     target_model: Model = field(validator=validators.instance_of(Model))
+
 
 class IntermediateRepresentationMetaSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `IntermediateRepresentationMeta` objects.
     """
+
     source_model = ma.fields.Nested(ModelSchema, required=True)
     target_model = ma.fields.Nested(ModelSchema, required=True)
 
@@ -173,6 +193,7 @@ class IntermediateRepresentationMetaSchema(ma.Schema):
         """
         return IntermediateRepresentationMeta(**data)
 
+
 @define(kw_only=True)
 class IntermediateRepresentationSpec:
     """
@@ -186,6 +207,7 @@ class IntermediateRepresentationSpec:
         input_format (str): The expected format of the input.
         output_schema (str): The expected schema or format of the output.
     """
+
     primary_intent: str = field(validator=validators.instance_of(str))
     tone_voice: str = field(validator=validators.instance_of(str))
     domain_context: str = field(validator=validators.instance_of(str))
@@ -193,10 +215,12 @@ class IntermediateRepresentationSpec:
     input_format: str = field(validator=validators.instance_of(str))
     output_schema: str = field(validator=validators.instance_of(str))
 
+
 class IntermediateRepresentationSpecSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `IntermediateRepresentationSpec` objects.
     """
+
     primary_intent = ma.fields.Str(required=True)
     tone_voice = ma.fields.Str(required=True)
     domain_context = ma.fields.Str(required=True)
@@ -217,7 +241,8 @@ class IntermediateRepresentationSpecSchema(ma.Schema):
             IntermediateRepresentationSpec: The constructed specification object.
         """
         return IntermediateRepresentationSpec(**data)
-    
+
+
 @define(kw_only=True)
 class IntermediateRepresentationData:
     """
@@ -226,19 +251,22 @@ class IntermediateRepresentationData:
     Attributes:
         few_shot_examples (list[Examples]): A list of few-shot examples to guide the model.
     """
-    few_shot_examples: list[Examples] = field(factory=list, validator=validators.deep_iterable(
-        member_validator=validators.instance_of(dict),
-        iterable_validator=validators.instance_of(list),
-  ))
+
+    few_shot_examples: list[Examples] = field(
+        factory=list,
+        validator=validators.deep_iterable(
+            member_validator=validators.instance_of(dict),
+            iterable_validator=validators.instance_of(list),
+        ),
+    )
+
 
 class IntermediateRepresentationDataSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `IntermediateRepresentationData` objects.
     """
-    few_shot_examples = ma.fields.List(
-            ma.fields.Nested(ExampleSchema),
-            required=True
-        )
+
+    few_shot_examples = ma.fields.List(ma.fields.Nested(ExampleSchema), required=True)
 
     @ma.post_load
     def make_ir_data(self, data: dict[str, Any], **kwargs: Any) -> IntermediateRepresentationData:
@@ -253,7 +281,7 @@ class IntermediateRepresentationDataSchema(ma.Schema):
             IntermediateRepresentationData: The constructed data object.
         """
         return IntermediateRepresentationData(**data)
-    
+
 
 @define(kw_only=True)
 class IntermediateRepresentation:
@@ -268,6 +296,7 @@ class IntermediateRepresentation:
         spec (IntermediateRepresentationSpec): Specifications for the prompt's intent, tone, etc.
         data (IntermediateRepresentationData): Data associated with the prompt, such as examples.
     """
+
     meta: IntermediateRepresentationMeta = field(
         validator=validators.instance_of(IntermediateRepresentationMeta)
     )
@@ -278,10 +307,12 @@ class IntermediateRepresentation:
         validator=validators.instance_of(IntermediateRepresentationData)
     )
 
+
 class IntermediateRepresentationSchema(ma.Schema):
     """
     Marshmallow schema for serializing and deserializing `IntermediateRepresentation` objects.
     """
+
     meta = ma.fields.Nested(IntermediateRepresentationMetaSchema, required=True)
     spec = ma.fields.Nested(IntermediateRepresentationSpecSchema, required=True)
     data = ma.fields.Nested(IntermediateRepresentationDataSchema, required=True)

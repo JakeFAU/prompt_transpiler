@@ -1,22 +1,40 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-toml
       - id: check-added-large-files
+      - id: debug-statements # <--- ADDED: Stops you from committing 'pdb.set_trace()'
 
+  # --- RUFF (Linter & Formatter) ---
+  # We use the remote repo because it's faster (compiled Rust),
+  # but it auto-detects your pyproject.toml settings.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.8
+    rev: v0.14.8
     hooks:
       - id: ruff
-        args: [ --fix ]
+        args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+  # --- MYPY (Type Checker) ---
+  # CHANGED: We use 'local' so it runs inside your Poetry environment.
+  # This gives it access to attrs, marshmallow, and your config settings.
+  - repo: local
     hooks:
       - id: mypy
-        additional_dependencies: []
+        name: mypy
+        entry: poetry run mypy
+        language: system
+        types: [python]
+        require_serial: true # Mypy prefers running on the whole batch, not parallel chunks
+
+  # --- POETRY CHECKS (Optional but Recommended) ---
+  # Ensures your pyproject.toml is valid and lock file is in sync
+  - repo: https://github.com/python-poetry/poetry
+    rev: 2.2.1
+    hooks:
+      - id: poetry-check
+      # - id: poetry-lock # Uncomment if you want to force lock file sync checks

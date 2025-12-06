@@ -81,13 +81,13 @@ def configure_logging(
 
         # Shared processors for both console and JSON
         shared_processors = [
-            structlog.contextvars.merge_contextvars,   # include contextvars
-            structlog.stdlib.add_log_level,           # level
-            structlog.stdlib.add_logger_name,         # logger name
+            structlog.contextvars.merge_contextvars,  # include contextvars
+            structlog.stdlib.add_log_level,  # level
+            structlog.stdlib.add_logger_name,  # logger name
             structlog.processors.TimeStamper(fmt="iso", utc=True),
-            callsite_adder,                           # filename, lineno, func, module
-            structlog.processors.StackInfoRenderer(), # stack_info=True support
-            structlog.processors.format_exc_info,     # exc_info to field
+            callsite_adder,  # filename, lineno, func, module
+            structlog.processors.StackInfoRenderer(),  # stack_info=True support
+            structlog.processors.format_exc_info,  # exc_info to field
         ]
 
         if log_format == "json":
@@ -109,7 +109,7 @@ def configure_logging(
             ]
 
         structlog.configure(
-            processors=processors, # type: ignore[arg-type]
+            processors=processors,  # type: ignore[arg-type]
             wrapper_class=structlog.stdlib.BoundLogger,
             context_class=dict,
             logger_factory=structlog.stdlib.LoggerFactory(),
