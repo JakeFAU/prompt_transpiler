@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from prompt_complier.llm.anthropic import AnthropicAdapter
@@ -7,7 +9,10 @@ from prompt_complier.llm.huggingface import HuggingFaceAdapter
 from prompt_complier.llm.openai import OpenAIAdapter
 
 
-def test_get_llm_provider_openai():
+@patch("prompt_complier.llm.openai.settings")
+def test_get_llm_provider_openai(mock_settings):
+    mock_settings.OPENAI_API_KEY = "test-openai-key"
+
     provider = get_llm_provider("openai")
     assert isinstance(provider, OpenAIAdapter)
 
@@ -15,17 +20,26 @@ def test_get_llm_provider_openai():
     assert isinstance(provider, OpenAIAdapter)
 
 
-def test_get_llm_provider_gemini():
+@patch("prompt_complier.llm.gemini.settings")
+def test_get_llm_provider_gemini(mock_settings):
+    mock_settings.GEMINI_API_KEY = "test-gemini-key"
+
     provider = get_llm_provider("gemini")
     assert isinstance(provider, GeminiAdapter)
 
 
-def test_get_llm_provider_anthropic():
+@patch("prompt_complier.llm.anthropic.settings")
+def test_get_llm_provider_anthropic(mock_settings):
+    mock_settings.ANTHROPIC_API_KEY = "test-anthropic-key"
+
     provider = get_llm_provider("anthropic")
     assert isinstance(provider, AnthropicAdapter)
 
 
-def test_get_llm_provider_huggingface():
+@patch("prompt_complier.llm.huggingface.settings")
+def test_get_llm_provider_huggingface(mock_settings):
+    mock_settings.HUGGINGFACE_API_KEY = "test-huggingface-key"
+
     provider = get_llm_provider("huggingface")
     assert isinstance(provider, HuggingFaceAdapter)
 
