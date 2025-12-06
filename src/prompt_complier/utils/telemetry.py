@@ -10,7 +10,7 @@ import logging
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any
+from typing import Any, ParamSpec, TypeVar, cast
 
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -22,6 +22,9 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExport
 from prompt_complier.config import settings
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 class TelemetryManager:
@@ -77,6 +80,11 @@ class TelemetryManager:
 
             # 4. Initialize Objects
             self._tracer = trace.get_tracer(self._service_name)
+            # Initialize the meter provider if needed, or just get the meter
+            # For simplicity, using the global metrics provider which might
+            # need setup if not standard
+            # But typically metrics.get_meter works if a provider is set globally.
+            # Here we just get it.
             self._meter = metrics.get_meter(self._service_name)
 
             logger.info(f"Telemetry initialized for {self._service_name}")
@@ -105,7 +113,7 @@ class TelemetryManager:
         with tracer.start_as_current_span(name, attributes=attributes or {}) as span:
             yield span
 
-    def instrument(self, name: str | None = None) -> Callable[..., Any]:
+    def instrument(self, name: str | None = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Decorator to trace a function automatically.
         Usage:
@@ -113,11 +121,11 @@ class TelemetryManager:
             def my_func(): ...
         """
 
-        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        def decorator(func: Callable[P, R]) -> Callable[P, R]:
             span_name = name or func.__name__
 
             @wraps(func)
-            def wrapper(*args: Any, **kwargs: Any) -> Any:
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
                 if not self._enabled:
                     return func(*args, **kwargs)
 
@@ -127,6 +135,41 @@ class TelemetryManager:
             return wrapper
 
         return decorator
+
+    def get_counter(self, name: str, description: str = "", unit: str = "1") -> metrics.Counter:
+        """
+        Get or create a counter metric.
+        If telemetry is disabled, returns a NoOpCounter (implicitly handled by OTEL API
+        or we return a dummy if meter is None).
+        """
+        if not self._enabled or self._meter is None:
+            # Return a dummy object that mimics the Counter interface
+            return cast(metrics.Counter, _NoOpCounter())
+
+        return self._meter.create_counter(name, description=description, unit=unit)
+
+    def get_histogram(self, name: str, description: str = "", unit: str = "1") -> metrics.Histogram:
+        """
+        Get or create a histogram metric.
+        """
+        if not self._enabled or self._meter is None:
+            return cast(metrics.Histogram, _NoOpHistogram())
+
+        return self._meter.create_histogram(name, description=description, unit=unit)
+
+
+class _NoOpCounter:
+    """Dummy counter for when telemetry is disabled."""
+
+    def add(self, amount: float | int, attributes: dict[str, Any] | None = None) -> None:
+        pass
+
+
+class _NoOpHistogram:
+    """Dummy histogram for when telemetry is disabled."""
+
+    def record(self, amount: float | int, attributes: dict[str, Any] | None = None) -> None:
+        pass
 
 
 # Singleton Instance

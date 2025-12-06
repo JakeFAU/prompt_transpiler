@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from functools import lru_cache
 from typing import Any
 
 import marshmallow as ma
@@ -24,7 +22,7 @@ class OriginalPrompt:
 
 
 class OriginalPromptSchema(ma.Schema):
-    """Marshmallow schema for serializing/deserializing OriginalPrompt."""
+    """Marshmallow schema for serializing and deserializing OriginalPrompt."""
 
     prompt = ma.fields.Str(required=True)
     model = ma.fields.Nested(ModelSchema, required=True)
@@ -38,41 +36,15 @@ class OriginalPromptSchema(ma.Schema):
         return OriginalPrompt(**data)
 
 
-@define(kw_only=True)
-class TranspiledPrompt:
-    """Holds the transpiled prompt ready for LLM consumption."""
-
-    prompt: str = field(validator=validators.instance_of(str))
-    model: Model = field(validator=validators.instance_of(Model))
-    response_format: dict[str, Any] | None = field(
-        default=None, validator=validators.optional(validators.instance_of(dict))
-    )
-    response: str | None = field(
-        default=None, validator=validators.optional(validators.instance_of(str))
-    )
-
-
-class TranspiledPromptSchema(ma.Schema):
-    """Marshmallow schema for serializing/deserializing TranspiledPrompt."""
-
-    prompt = ma.fields.Str(required=True)
-    model = ma.fields.Nested(ModelSchema, required=True)
-    response_format = ma.fields.Dict(
-        keys=ma.fields.Str(), values=ma.fields.Raw(), required=False, allow_none=True
-    )
-    response = ma.fields.Str(required=False, allow_none=True)
-
-    @ma.post_load
-    def make_transpiled_prompt(self, data: dict[str, Any], **kwargs: Any) -> TranspiledPrompt:
-        return TranspiledPrompt(**data)
-
-
-# An algo is a Callable that takes a CandidatePrompt and OriginalPrompt and returns a float score
 class ScoringAlgorithm(ABC):
-    """Abstract base class for scoring algorithms."""
+    """
+    Abstract Strategy for calculating the final score.
+    This allows injecting different weighting logic (e.g. prioritizing Tone vs Intent).
+    """
 
     @abstractmethod
     def calculate_score(self, candidate: "CandidatePrompt", original: OriginalPrompt) -> float:
+        """Calculates a final float score based on the candidate's component scores."""
         pass
 
 
@@ -88,6 +60,8 @@ class CandidatePrompt:
     response: str | None = field(
         default=None, validator=validators.optional(validators.instance_of(str))
     )
+
+    # Component Scores (populated by Judge)
     primary_intent_score: float | None = field(
         default=None, validator=validators.optional(validators.instance_of(float))
     )
@@ -101,19 +75,31 @@ class CandidatePrompt:
         default=None, validator=validators.optional(validators.instance_of(dict))
     )
 
-    _score_algorithm: Callable[["CandidatePrompt", OriginalPrompt], float]
-    _total_score: float | None
+    # Feedback from the Judge for optimization
+    feedback: str | None = field(
+        default=None, validator=validators.optional(validators.instance_of(str))
+    )
 
-    @lru_cache(maxsize=4)  # noqa: B019
-    def total_score(
-        self,
-        algo: Callable[["CandidatePrompt", OriginalPrompt], float],
-        original_prompt: OriginalPrompt,
-    ) -> float:
-        """Calculate total score using the provided scoring algorithm."""
-        if self._total_score is not None:
-            if self._score_algorithm == algo:
-                return self._total_score
-        self._total_score = algo(self, original_prompt)
-        self._score_algorithm = algo
-        return self._total_score
+    # Internal Cache State (Not exposed in __init__)
+    _cached_score: float | None = field(init=False, default=None)
+    _cached_algo_id: int | None = field(init=False, default=None)
+
+    def total_score(self, algo: ScoringAlgorithm, original: OriginalPrompt) -> float:
+        """
+        Calculates the total score using the provided strategy.
+        Caches the result for the specific algorithm instance.
+        """
+        algo_id = id(algo)
+
+        # Check cache hit
+        if self._cached_score is not None and self._cached_algo_id == algo_id:
+            return self._cached_score
+
+        # Calculate
+        score = algo.calculate_score(self, original)
+
+        # Cache result
+        self._cached_score = score
+        self._cached_algo_id = algo_id
+
+        return score
