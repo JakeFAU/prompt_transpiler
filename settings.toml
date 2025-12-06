@@ -11,3 +11,15 @@ SERVICE_VERSION = "1.0.0"
 DEFAULT_OPENAI_BASIC_MODEL = "gpt-4o-mini"
 DEFAULT_OPENAI_THINKING_MODEL = "gpt-4o"
 TEMPERATURE = 0.0
+
+[default.gemini]
+DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"
+TEMPERATURE = 0.0
+
+[default.anthropic]
+DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
+TEMPERATURE = 0.0
+
+[default.huggingface]
+DEFAULT_HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
+TEMPERATURE = 0.0

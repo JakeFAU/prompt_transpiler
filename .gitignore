@@ -159,3 +159,4 @@ cython_debug/
 .pytest_cache/
 # Ignore dynaconf secret files
 .secrets.*
+gemini.md
