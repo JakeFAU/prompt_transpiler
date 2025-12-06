@@ -32,7 +32,8 @@ logger = get_logger(__name__)
 def create_dummy_model(model_name: str, provider_name: str) -> Model:
     """Helper to create a Model object since we don't have a database yet."""
     p_type = ModelProviderType.API
-    if "huggingface" in provider_name.lower():
+    normalized_provider = provider_name.lower().strip()
+    if "huggingface" in normalized_provider:
         p_type = ModelProviderType.HUGGINGFACE
 
     style = PromptStyle.MARKDOWN
@@ -41,7 +42,7 @@ def create_dummy_model(model_name: str, provider_name: str) -> Model:
 
     return Model(
         provider=Provider(
-            provider=provider_name,
+            provider=normalized_provider,
             provider_type=p_type,
         ),
         model_name=model_name,
@@ -50,6 +51,27 @@ def create_dummy_model(model_name: str, provider_name: str) -> Model:
         prompt_style=style,
         supports_json_mode=True,
         prompting_tips="Be concise.",
+    )
+
+
+def _default_architect() -> IArchitect:
+    return GPTArchitect(
+        provider_name=settings.roles.architect.provider,
+        model_name=settings.roles.architect.model,
+    )
+
+
+def _default_decompiler() -> IDecompiler:
+    return GeminiDecompiler(
+        provider_name=settings.roles.decompiler.provider,
+        model_name=settings.roles.decompiler.model,
+    )
+
+
+def _default_judge() -> IJudge:
+    return LLMAdjudicator(
+        provider_name=settings.roles.judge.provider,
+        model_name=settings.roles.judge.model,
     )
 
 
@@ -62,10 +84,10 @@ class PromptCompilerPipeline:
     """
 
     historian: IHistorian = field(factory=DefaultHistorian)
-    decompiler: IDecompiler = field(factory=GeminiDecompiler)
-    architect: IArchitect = field(factory=GPTArchitect)
+    decompiler: IDecompiler = field(factory=_default_decompiler)
+    architect: IArchitect = field(factory=_default_architect)
     pilot: IPilot = field(factory=DefaultPilot)
-    judge: IJudge = field(factory=LLMAdjudicator)
+    judge: IJudge = field(factory=_default_judge)
 
     # Injectable Scoring Strategy
     scoring_algorithm: ScoringAlgorithm = field(factory=WeightedScoreAlgorithm)
@@ -96,32 +118,25 @@ class PromptCompilerPipeline:
         )
 
     @telemetry.instrument(name="pipeline.compile")
-    async def run(  # noqa: PLR0915
-        self, raw_prompt: str, source_model: str, target_model: str, max_retries: int | None = None
+    async def run(  # noqa: PLR0915, PLR0913
+        self,
+        raw_prompt: str,
+        source_model: str,
+        target_model: str,
+        max_retries: int | None = None,
+        source_provider: str = "openai",
+        target_provider: str = "openai",
     ) -> CandidatePrompt:
         """
         Execute the prompt compilation pipeline.
-
-        This process involves:
-        1.  **Baseline:** Establishing a baseline performance using the original prompt.
-        2.  **Decompilation:** converting the raw prompt into an Intermediate Representation (IR).
-        3.  **Optimization Loop (Architect/Pilot/Judge):**
-            -   **Architect:** Generates a candidate prompt based on the IR.
-            -   **Pilot:** Tests the candidate prompt.
-            -   **Judge:** Evaluates the candidate against the baseline.
-            -   **Scoring:** Determines if the candidate meets the quality threshold.
 
         Args:
             raw_prompt: The original prompt text to be converted.
             source_model: Name of the model the original prompt was designed for (e.g., 'gpt-4').
             target_model: Name of the model to optimize for (e.g., 'gemini-1.5-pro').
             max_retries: Optional override for maximum optimization attempts.
-
-        Returns:
-            CandidatePrompt: The best optimized prompt candidate found.
-
-        Raises:
-            RuntimeError: If the pipeline fails to generate a valid candidate after retries.
+            source_provider: Provider for source model (default: openai).
+            target_provider: Provider for target model (default: openai).
         """
         if max_retries is None:
             max_retries = self.max_retries
@@ -137,8 +152,9 @@ class PromptCompilerPipeline:
 
         try:
             # 1. Setup Models
-            src_model_obj = create_dummy_model(source_model, "openai")  # Defaulting source
-            tgt_model_obj = create_dummy_model(target_model, "openai")  # Defaulting target
+            # Now we use passed providers
+            src_model_obj = create_dummy_model(source_model, source_provider)
+            tgt_model_obj = create_dummy_model(target_model, target_provider)
 
             original = OriginalPrompt(prompt=raw_prompt, model=src_model_obj)
 
@@ -220,10 +236,19 @@ class PromptCompilerPipeline:
         return candidate
 
 
-# Convenience function to match the previous API
 async def compile_pipeline(
-    raw_text: str, source_model_name: str, target_model_name: str
+    raw_text: str,
+    source_model_name: str,
+    target_model_name: str,
+    source_provider: str = "openai",
+    target_provider: str = "openai",
 ) -> CandidatePrompt:
     """Entry point for the CLI or API."""
     pipeline = PromptCompilerPipeline()
-    return await pipeline.run(raw_text, source_model_name, target_model_name)
+    return await pipeline.run(
+        raw_text,
+        source_model_name,
+        target_model_name,
+        source_provider=source_provider,
+        target_provider=target_provider,
+    )

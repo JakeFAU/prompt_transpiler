@@ -4,7 +4,7 @@ from attrs import define
 
 from prompt_complier.core.exceptions import EvaluationError
 from prompt_complier.core.interfaces import IJudge
-from prompt_complier.llm.openai import OpenAIAdapter
+from prompt_complier.llm.factory import get_llm_provider
 from prompt_complier.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
@@ -58,9 +58,9 @@ class WeightedScoreAlgorithm(ScoringAlgorithm):
 class LLMAdjudicator(IJudge):
     """
     Judge Role: Measures the quality of the response using an LLM.
-    Does NOT calculate the final weighted score; it provides the raw metrics.
     """
 
+    provider_name: str = "openai"
     model_name: str = "gpt-4o"
 
     @telemetry.instrument(name="judge.evaluate")
@@ -69,9 +69,9 @@ class LLMAdjudicator(IJudge):
         Runs the evaluation and returns 0.0 (legacy return).
         The component scores are updated on the Candidate object.
         """
-        logger.info("Judge evaluating candidate")
+        logger.info("Judge evaluating candidate", judge_model=self.model_name)
 
-        provider = OpenAIAdapter()
+        provider = get_llm_provider(self.provider_name)
 
         system_prompt = (
             "You are a Judge. Compare the Baseline response and the Candidate response "
@@ -120,7 +120,7 @@ class LLMAdjudicator(IJudge):
 
             candidate.primary_intent_score = data.get("primary_intent_score", 0.0)
             candidate.tone_voice_score = data.get("tone_voice_score", 0.0)
-            candidate.constraint_scores = data.get("constraint_scores", {})
+            candidate.constraint_scores = data.get("constraint_scores", {{}})
             candidate.feedback = data.get("feedback_hint", "")
 
             # We return 0.0 because the *Pipeline* will calculate the final score using the Strategy
