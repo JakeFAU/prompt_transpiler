@@ -78,7 +78,7 @@ class TestExamples:
         loaded = schema.load(example_data)
         assert loaded["input"] == "Hello"  # pyright: ignore
         assert loaded["output"] == "Hi there!"  # pyright: ignore
-        
+
         dumped = schema.dump(loaded)
         assert dumped == example_data
 
@@ -99,7 +99,7 @@ class TestIntermediateRepresentation:
     def test_ir_data_deserialization(self, ir_data_data):
         schema = IntermediateRepresentationDataSchema()
         data = schema.load(ir_data_data)
-        assert len(data.few_shot_examples) == 1 # pyright: ignore
+        assert len(data.few_shot_examples) == 1  # pyright: ignore
         assert data.few_shot_examples[0]["input"] == "Hello"  # pyright: ignore
 
     def test_ir_full_cycle(self, ir_full_data):
@@ -108,7 +108,7 @@ class TestIntermediateRepresentation:
         ir_obj = schema.load(ir_full_data)
         assert isinstance(ir_obj, IntermediateRepresentation)
         assert ir_obj.spec.tone_voice == "Friendly"
-        
+
         # Test Serialization
         dumped = schema.dump(ir_obj)
         assert dumped == ir_full_data

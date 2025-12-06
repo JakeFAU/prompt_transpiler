@@ -4,6 +4,7 @@ OpenAI LLM Provider implementation.
 This module contains the `OpenAIAdapter`, which implements the `LLMProvider` interface
 for interacting with OpenAI's chat completion API.
 """
+
 from typing import Any
 
 import openai
@@ -16,12 +17,14 @@ from .base import LLMProvider
 
 logger = get_logger(__name__)
 
+
 class OpenAIAdapter(LLMProvider):
     """
     Adapter for the OpenAI API.
 
     Handles initialization of the async OpenAI client and standardized generation calls.
     """
+
     _client: openai.AsyncOpenAI
 
     def __init__(self) -> None:
@@ -29,15 +32,15 @@ class OpenAIAdapter(LLMProvider):
         self._client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
     async def generate(
-        self, 
-        system_prompt: str, 
+        self,
+        system_prompt: str,
         user_prompt: str,
-        # Note: Ensure your ABC 'generate' signature matches this, 
+        # Note: Ensure your ABC 'generate' signature matches this,
         # or grab model_name from **config if the ABC is strict.
-        model_name: str, 
+        model_name: str,
         config: dict[str, Any],
         response_schema: dict[str, Any] | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> str:
         """
         Generates a response from an OpenAI model.
@@ -60,7 +63,7 @@ class OpenAIAdapter(LLMProvider):
             "model": model_name,
             "temperature": settings.OPENAI.TEMPERATURE,
             **config,
-            **kwargs
+            **kwargs,
         }
 
         # Handle Structured Outputs
@@ -68,43 +71,36 @@ class OpenAIAdapter(LLMProvider):
             logger.debug("Enforcing JSON Schema strict mode")
             params["response_format"] = {
                 "type": "json_schema",
-                "json_schema": {
-                    "name": "ir_response",
-                    "strict": True,
-                    "schema": response_schema
-                }
+                "json_schema": {"name": "ir_response", "strict": True, "schema": response_schema},
             }
         elif params.get("response_format") == {"type": "json_object"}:
             logger.debug("Using legacy JSON mode")
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
+            {"role": "user", "content": user_prompt},
         ]
 
         # The Fix: Ignore the overload error caused by **params unpacking
         response: ChatCompletion = await self._client.chat.completions.create(
-            messages=messages, # type: ignore[arg-type]
-            **params
-        ) 
+            messages=messages,  # type: ignore[arg-type]
+            **params,
+        )
         # Log metadata, not content
         logger.debug(
-            "OpenAI generation complete", 
-            id=response.id, 
-            usage=response.usage.model_dump() if response.usage else None
+            "OpenAI generation complete",
+            id=response.id,
+            usage=response.usage.model_dump() if response.usage else None,
         )
-        
+
         return response.choices[0].message.content or ""
-    
+
     async def available_models(self) -> list[str]:
         """Fetches available GPT models (filtering out audio/image models)."""
         pager = await self._client.models.list()
-        
+
         # Simple filter to keep the list relevant for a Prompt Compiler
-        model_names = [
-            m.id for m in pager.data 
-            if "gpt" in m.id or "o1" in m.id
-        ]
-        
+        model_names = [m.id for m in pager.data if "gpt" in m.id or "o1" in m.id]
+
         logger.info("Fetched OpenAI models", count=len(model_names))
         return sorted(model_names, reverse=True)
