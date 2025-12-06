@@ -23,3 +23,8 @@ TEMPERATURE = 0.0
 [default.huggingface]
 DEFAULT_HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 TEMPERATURE = 0.0
+
+[default.compiler]
+MAX_RETRIES = 3
+SCORE_THRESHOLD = 0.8
+EARLY_STOP_PATIENCE = 1 # Number of retries without improvement before stopping
