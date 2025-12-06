@@ -120,7 +120,7 @@ class LLMAdjudicator(IJudge):
 
             candidate.primary_intent_score = data.get("primary_intent_score", 0.0)
             candidate.tone_voice_score = data.get("tone_voice_score", 0.0)
-            candidate.constraint_scores = data.get("constraint_scores", {{}})
+            candidate.constraint_scores = data.get("constraint_scores", {})
             candidate.feedback = data.get("feedback_hint", "")
 
             # We return 0.0 because the *Pipeline* will calculate the final score using the Strategy

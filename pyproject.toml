@@ -74,3 +74,6 @@ disallow_untyped_decorators = false
 addopts = "--cov=prompt_complier --cov-report=term-missing"
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.coverage.run]
+omit = ["src/prompt_complier/cli.py"]
