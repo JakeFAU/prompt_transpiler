@@ -19,7 +19,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
 # Import your settings
-from prompt_complier.config import settings
+from prompt_compiler.config import settings
 
 logger = logging.getLogger(__name__)
 

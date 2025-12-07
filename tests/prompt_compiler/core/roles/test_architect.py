@@ -2,9 +2,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from prompt_complier.core.exceptions import ArchitectureError
-from prompt_complier.core.roles.architect import GPTArchitect
-from prompt_complier.dto.models import (
+from prompt_compiler.core.exceptions import ArchitectureError
+from prompt_compiler.core.roles.architect import GPTArchitect
+from prompt_compiler.dto.models import (
     IntermediateRepresentation,
     IntermediateRepresentationData,
     IntermediateRepresentationMeta,
@@ -47,7 +47,7 @@ def mock_ir(mock_model):
 
 @pytest.mark.asyncio
 async def test_architect_design_prompt_success(mock_ir, mock_model):
-    with patch("prompt_complier.core.roles.architect.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.roles.architect.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Optimized Prompt"
         mock_get_provider.return_value = mock_provider
@@ -62,7 +62,7 @@ async def test_architect_design_prompt_success(mock_ir, mock_model):
 
 @pytest.mark.asyncio
 async def test_architect_design_prompt_with_feedback(mock_ir, mock_model):
-    with patch("prompt_complier.core.roles.architect.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.roles.architect.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Optimized Prompt"
         mock_get_provider.return_value = mock_provider
@@ -76,7 +76,7 @@ async def test_architect_design_prompt_with_feedback(mock_ir, mock_model):
 
 @pytest.mark.asyncio
 async def test_architect_failure(mock_ir, mock_model):
-    with patch("prompt_complier.core.roles.architect.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.roles.architect.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.side_effect = Exception("LLM Error")
         mock_get_provider.return_value = mock_provider

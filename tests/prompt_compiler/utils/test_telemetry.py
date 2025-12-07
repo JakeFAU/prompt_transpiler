@@ -1,5 +1,5 @@
-from prompt_complier.config import settings
-from prompt_complier.utils.telemetry import TelemetryManager
+from prompt_compiler.config import settings
+from prompt_compiler.utils.telemetry import TelemetryManager
 
 
 def test_telemetry_disabled(monkeypatch, mocker):
@@ -9,8 +9,8 @@ def test_telemetry_disabled(monkeypatch, mocker):
     settings.reload()
 
     # Mock dependencies to verify they are NOT called
-    mock_resource = mocker.patch("prompt_complier.utils.telemetry.Resource")
-    mock_provider = mocker.patch("prompt_complier.utils.telemetry.TracerProvider")
+    mock_resource = mocker.patch("prompt_compiler.utils.telemetry.Resource")
+    mock_provider = mocker.patch("prompt_compiler.utils.telemetry.TracerProvider")
 
     tm = TelemetryManager()
     tm.setup()
@@ -29,12 +29,12 @@ def test_telemetry_enabled(monkeypatch, mocker):
     settings.reload()
 
     # Mock dependencies
-    mock_resource = mocker.patch("prompt_complier.utils.telemetry.Resource")
-    mock_provider = mocker.patch("prompt_complier.utils.telemetry.TracerProvider")
+    mock_resource = mocker.patch("prompt_compiler.utils.telemetry.Resource")
+    mock_provider = mocker.patch("prompt_compiler.utils.telemetry.TracerProvider")
     # Mock the ConsoleSpanExporter since we cleared the endpoint
-    mocker.patch("prompt_complier.utils.telemetry.ConsoleSpanExporter")
-    mock_trace = mocker.patch("prompt_complier.utils.telemetry.trace")
-    mock_metrics = mocker.patch("prompt_complier.utils.telemetry.metrics")
+    mocker.patch("prompt_compiler.utils.telemetry.ConsoleSpanExporter")
+    mock_trace = mocker.patch("prompt_compiler.utils.telemetry.trace")
+    mock_metrics = mocker.patch("prompt_compiler.utils.telemetry.metrics")
 
     tm = TelemetryManager()
     tm.setup()
@@ -58,7 +58,7 @@ def test_telemetry_span_decorator(monkeypatch, mocker):
     mock_span = mocker.MagicMock()
     mock_tracer.start_as_current_span.return_value.__enter__.return_value = mock_span
 
-    mocker.patch("prompt_complier.utils.telemetry.trace.get_tracer", return_value=mock_tracer)
+    mocker.patch("prompt_compiler.utils.telemetry.trace.get_tracer", return_value=mock_tracer)
 
     @tm.instrument(name="test_func")
     def my_func(x):

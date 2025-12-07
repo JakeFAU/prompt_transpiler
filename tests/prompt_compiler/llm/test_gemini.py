@@ -3,12 +3,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from prompt_complier.llm.gemini import GeminiAdapter
+from prompt_compiler.llm.gemini import GeminiAdapter
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(mocker):
-    mock_conf = mocker.patch("prompt_complier.llm.gemini.settings")
+    mock_conf = mocker.patch("prompt_compiler.llm.gemini.settings")
     mock_conf.GEMINI_API_KEY = "sk-gemini-key"
     mock_conf.GEMINI.TEMPERATURE = 0.0
     return mock_conf
@@ -16,7 +16,7 @@ def mock_settings(mocker):
 
 @pytest.fixture
 def mock_gemini(mocker):
-    return mocker.patch("prompt_complier.llm.gemini.genai.Client")
+    return mocker.patch("prompt_compiler.llm.gemini.genai.Client")
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,7 @@
 import marshmallow as ma
 import pytest
 
-from prompt_complier.dto.models import (
+from prompt_compiler.dto.models import (
     ExampleSchema,
     IntermediateRepresentation,
     IntermediateRepresentationDataSchema,

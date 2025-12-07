@@ -2,19 +2,19 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from prompt_complier.core.interfaces import (
+from prompt_compiler.core.interfaces import (
     IArchitect,
     IDecompiler,
     IHistorian,
     IJudge,
     IPilot,
 )
-from prompt_complier.core.pipeline import (
+from prompt_compiler.core.pipeline import (
     PromptCompilerPipeline,
     compile_pipeline,
     create_dummy_model,
 )
-from prompt_complier.dto.models import (
+from prompt_compiler.dto.models import (
     IntermediateRepresentation,
     IntermediateRepresentationData,
     IntermediateRepresentationMeta,
@@ -24,7 +24,7 @@ from prompt_complier.dto.models import (
     PromptStyle,
     Provider,
 )
-from prompt_complier.llm.prompts.prompt_objects import (
+from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
     ScoringAlgorithm,
@@ -229,7 +229,7 @@ async def test_pipeline_failure(mock_roles):
 
 @pytest.mark.asyncio
 async def test_compile_pipeline_entry_point():
-    with patch("prompt_complier.core.pipeline.PromptCompilerPipeline") as MockPipeline:
+    with patch("prompt_compiler.core.pipeline.PromptCompilerPipeline") as MockPipeline:
         mock_instance = MockPipeline.return_value
         mock_instance.run = AsyncMock(return_value="result")
 

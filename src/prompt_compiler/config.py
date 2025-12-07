@@ -11,7 +11,7 @@ from pathlib import Path
 from dynaconf import Dynaconf
 
 # Resolve the project root directory
-# src/prompt_complier/config.py -> src/prompt_complier -> src -> root
+# src/prompt_compiler/config.py -> src/prompt_compiler -> src -> root
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SETTINGS_FILE = BASE_DIR / "settings.toml"
 SECRETS_FILE = BASE_DIR / ".secrets.toml"

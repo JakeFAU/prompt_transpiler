@@ -6,8 +6,8 @@ Defines the contracts for Roles and Strategies.
 
 from abc import ABC, abstractmethod
 
-from prompt_complier.dto.models import IntermediateRepresentation, Model
-from prompt_complier.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
+from prompt_compiler.dto.models import IntermediateRepresentation, Model
+from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
 
 
 class IHistorian(ABC):

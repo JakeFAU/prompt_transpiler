@@ -2,12 +2,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from prompt_complier.llm.openai import OpenAIAdapter
+from prompt_compiler.llm.openai import OpenAIAdapter
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(mocker):
-    mock_conf = mocker.patch("prompt_complier.llm.openai.settings")
+    mock_conf = mocker.patch("prompt_compiler.llm.openai.settings")
     mock_conf.OPENAI_API_KEY = "sk-test-key"
     mock_conf.OPENAI.TEMPERATURE = 0.0
     return mock_conf
@@ -16,7 +16,7 @@ def mock_settings(mocker):
 @pytest.fixture
 def mock_openai(mocker):
     # Mock the class itself so when instantiated it returns our mock object
-    return mocker.patch("prompt_complier.llm.openai.openai.AsyncOpenAI")
+    return mocker.patch("prompt_compiler.llm.openai.openai.AsyncOpenAI")
 
 
 @pytest.mark.asyncio

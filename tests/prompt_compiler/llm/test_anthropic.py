@@ -2,12 +2,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from prompt_complier.llm.anthropic import AnthropicAdapter
+from prompt_compiler.llm.anthropic import AnthropicAdapter
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(mocker):
-    mock_conf = mocker.patch("prompt_complier.llm.anthropic.settings")
+    mock_conf = mocker.patch("prompt_compiler.llm.anthropic.settings")
     mock_conf.ANTHROPIC_API_KEY = "sk-ant-key"
     mock_conf.ANTHROPIC.TEMPERATURE = 0.0
     return mock_conf
@@ -15,7 +15,7 @@ def mock_settings(mocker):
 
 @pytest.fixture
 def mock_anthropic(mocker):
-    return mocker.patch("prompt_complier.llm.anthropic.AsyncAnthropic")
+    return mocker.patch("prompt_compiler.llm.anthropic.AsyncAnthropic")
 
 
 @pytest.mark.asyncio

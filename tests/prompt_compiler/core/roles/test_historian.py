@@ -2,10 +2,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from prompt_complier.core.exceptions import ProviderError
-from prompt_complier.core.roles.historian import DefaultHistorian
-from prompt_complier.dto.models import Model, ModelProviderType, PromptStyle, Provider
-from prompt_complier.llm.prompts.prompt_objects import OriginalPrompt
+from prompt_compiler.core.exceptions import ProviderError
+from prompt_compiler.core.roles.historian import DefaultHistorian
+from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.llm.prompts.prompt_objects import OriginalPrompt
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def mock_model():
 
 @pytest.mark.asyncio
 async def test_historian_success(mock_model):
-    with patch("prompt_complier.core.roles.historian.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.roles.historian.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Baseline Response"
         mock_get_provider.return_value = mock_provider
@@ -39,7 +39,7 @@ async def test_historian_success(mock_model):
 
 @pytest.mark.asyncio
 async def test_historian_failure(mock_model):
-    with patch("prompt_complier.core.roles.historian.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.roles.historian.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.side_effect = Exception("LLM Error")
         mock_get_provider.return_value = mock_provider

@@ -16,7 +16,7 @@ from typing import Any, cast
 import structlog
 from structlog.processors import CallsiteParameterAdder
 
-from prompt_complier.config import settings
+from prompt_compiler.config import settings
 
 # ---- internal singleton state ----
 

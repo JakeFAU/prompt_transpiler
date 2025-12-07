@@ -10,8 +10,8 @@ from typing import Any
 from google import genai
 from google.genai import types
 
-from prompt_complier.config import settings
-from prompt_complier.utils.logging import get_logger
+from prompt_compiler.config import settings
+from prompt_compiler.utils.logging import get_logger
 
 from .base import LLMProvider
 

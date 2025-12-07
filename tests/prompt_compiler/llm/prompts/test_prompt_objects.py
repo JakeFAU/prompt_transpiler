@@ -1,7 +1,7 @@
 import pytest
 
-from prompt_complier.dto.models import Model, ModelProviderType, PromptStyle, Provider
-from prompt_complier.llm.prompts.prompt_objects import (
+from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
     OriginalPromptSchema,

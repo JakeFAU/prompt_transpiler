@@ -5,8 +5,8 @@ from pathlib import Path
 import click
 from dynaconf import settings
 
-from prompt_complier.core.pipeline import compile_pipeline
-from prompt_complier.utils.logging import get_logger
+from prompt_compiler.core.pipeline import compile_pipeline
+from prompt_compiler.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

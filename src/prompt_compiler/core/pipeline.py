@@ -2,27 +2,27 @@ from typing import Any
 
 from attrs import define, field
 
-from prompt_complier.config import settings
-from prompt_complier.core.interfaces import (
+from prompt_compiler.config import settings
+from prompt_compiler.core.interfaces import (
     IArchitect,
     IDecompiler,
     IHistorian,
     IJudge,
     IPilot,
 )
-from prompt_complier.core.roles.architect import GPTArchitect
-from prompt_complier.core.roles.decompiler import GeminiDecompiler
-from prompt_complier.core.roles.historian import DefaultHistorian
-from prompt_complier.core.roles.pilot import DefaultPilot
-from prompt_complier.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
-from prompt_complier.dto.models import Model, ModelProviderType, PromptStyle, Provider
-from prompt_complier.llm.prompts.prompt_objects import (
+from prompt_compiler.core.roles.architect import GPTArchitect
+from prompt_compiler.core.roles.decompiler import GeminiDecompiler
+from prompt_compiler.core.roles.historian import DefaultHistorian
+from prompt_compiler.core.roles.pilot import DefaultPilot
+from prompt_compiler.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
+from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
     ScoringAlgorithm,
 )
-from prompt_complier.utils.logging import get_logger
-from prompt_complier.utils.telemetry import telemetry
+from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
 

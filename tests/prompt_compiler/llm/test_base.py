@@ -2,14 +2,14 @@ from unittest.mock import patch
 
 import pytest
 
-from prompt_complier.llm.base import LLMProvider, available_llm_providers
+from prompt_compiler.llm.base import LLMProvider, available_llm_providers
 
 # Test constants
 EXPECTED_PROVIDER_COUNT = 4
 
 
 def test_available_llm_providers_all_set():
-    with patch("prompt_complier.llm.base.settings") as mock_settings:
+    with patch("prompt_compiler.llm.base.settings") as mock_settings:
         mock_settings.OPENAI_API_KEY = "sk-..."
         mock_settings.GEMINI_API_KEY = "AI..."
         mock_settings.ANTHROPIC_API_KEY = "sk-ant..."
@@ -24,7 +24,7 @@ def test_available_llm_providers_all_set():
 
 
 def test_available_llm_providers_none_set():
-    with patch("prompt_complier.llm.base.settings") as mock_settings:
+    with patch("prompt_compiler.llm.base.settings") as mock_settings:
         mock_settings.OPENAI_API_KEY = None
         mock_settings.GEMINI_API_KEY = None
         mock_settings.ANTHROPIC_API_KEY = None
@@ -35,7 +35,7 @@ def test_available_llm_providers_none_set():
 
 
 def test_available_llm_providers_partial():
-    with patch("prompt_complier.llm.base.settings") as mock_settings:
+    with patch("prompt_compiler.llm.base.settings") as mock_settings:
         mock_settings.OPENAI_API_KEY = "sk-..."
         mock_settings.GEMINI_API_KEY = None
         mock_settings.ANTHROPIC_API_KEY = None

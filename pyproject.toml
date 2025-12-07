@@ -24,7 +24,7 @@ huggingface-hub = "^1.2.1"
 click = "^8.3.1"
 
 [tool.poetry.scripts]
-prompt-compiler = "prompt_complier.cli:main"
+prompt-compiler = "prompt_compiler.cli:main"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^9.0.1"
@@ -40,7 +40,7 @@ pre-commit = "^4.4.0"
 mypy = "^1.18.2"
 
 [tool.poetry]
-packages = [{ include = "prompt_complier", from = "src" }]
+packages = [{ include = "prompt_compiler", from = "src" }]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -71,9 +71,9 @@ disallow_incomplete_defs = false
 disallow_untyped_decorators = false
 
 [tool.pytest.ini_options]
-addopts = "--cov=prompt_complier --cov-report=term-missing"
+addopts = "--cov=prompt_compiler --cov-report=term-missing"
 testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.coverage.run]
-omit = ["src/prompt_complier/cli.py"]
+omit = ["src/prompt_compiler/cli.py"]
