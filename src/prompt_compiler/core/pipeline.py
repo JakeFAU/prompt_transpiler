@@ -212,19 +212,28 @@ class PromptCompilerPipeline:
         return candidate
 
 
-async def compile_pipeline(
+async def compile_pipeline(  # noqa: PLR0913
     raw_text: str,
     source_model_name: str,
     target_model_name: str,
     source_provider: str = "openai",
     target_provider: str = "openai",
+    max_retries: int | None = None,
+    score_threshold: float | None = None,
 ) -> CandidatePrompt:
     """Entry point for the CLI or API."""
-    pipeline = PromptCompilerPipeline()
+    kwargs: dict[str, Any] = {}
+    if max_retries is not None:
+        kwargs["max_retries"] = max_retries
+    if score_threshold is not None:
+        kwargs["score_threshold"] = score_threshold
+
+    pipeline = PromptCompilerPipeline(**kwargs)
     return await pipeline.run(
         raw_text,
         source_model_name,
         target_model_name,
         source_provider=source_provider,
         target_provider=target_provider,
+        max_retries=max_retries,
     )
