@@ -1,4 +1,4 @@
-from prompt_complier.config import settings
+from prompt_compiler.config import settings
 
 
 def test_dynaconf_env_override(monkeypatch):

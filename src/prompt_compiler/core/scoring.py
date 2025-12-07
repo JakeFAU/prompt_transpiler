@@ -2,16 +2,16 @@ import json
 
 from attrs import define
 
-from prompt_complier.core.exceptions import EvaluationError
-from prompt_complier.core.interfaces import IJudge
-from prompt_complier.llm.factory import get_llm_provider
-from prompt_complier.llm.prompts.prompt_objects import (
+from prompt_compiler.core.exceptions import EvaluationError
+from prompt_compiler.core.interfaces import IJudge
+from prompt_compiler.llm.factory import get_llm_provider
+from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
     ScoringAlgorithm,
 )
-from prompt_complier.utils.logging import get_logger
-from prompt_complier.utils.telemetry import telemetry
+from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
 

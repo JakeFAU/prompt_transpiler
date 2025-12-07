@@ -2,13 +2,13 @@ import json
 
 from attrs import define
 
-from prompt_complier.core.exceptions import ArchitectureError
-from prompt_complier.core.interfaces import IArchitect
-from prompt_complier.dto.models import IntermediateRepresentation, Model
-from prompt_complier.llm.factory import get_llm_provider
-from prompt_complier.llm.prompts.prompt_objects import CandidatePrompt
-from prompt_complier.utils.logging import get_logger
-from prompt_complier.utils.telemetry import telemetry
+from prompt_compiler.core.exceptions import ArchitectureError
+from prompt_compiler.core.interfaces import IArchitect
+from prompt_compiler.dto.models import IntermediateRepresentation, Model
+from prompt_compiler.llm.factory import get_llm_provider
+from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt
+from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
 

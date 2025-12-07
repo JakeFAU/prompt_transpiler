@@ -3,10 +3,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from prompt_complier.core.exceptions import EvaluationError
-from prompt_complier.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
-from prompt_complier.dto.models import Model, ModelProviderType, PromptStyle, Provider
-from prompt_complier.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
+from prompt_compiler.core.exceptions import EvaluationError
+from prompt_compiler.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
+from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
 
 # Test constants
 EXPECTED_INTENT_SCORE = 0.9
@@ -46,7 +46,7 @@ def test_weighted_score_algorithm(mock_model):
 
 @pytest.mark.asyncio
 async def test_llm_adjudicator_success(mock_model):
-    with patch("prompt_complier.core.scoring.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         response_data = {
             "primary_intent_score": 0.9,
@@ -73,7 +73,7 @@ async def test_llm_adjudicator_success(mock_model):
 
 @pytest.mark.asyncio
 async def test_llm_adjudicator_invalid_json(mock_model):
-    with patch("prompt_complier.core.scoring.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.return_value = "Not JSON"
         mock_get_provider.return_value = mock_provider
@@ -88,7 +88,7 @@ async def test_llm_adjudicator_invalid_json(mock_model):
 
 @pytest.mark.asyncio
 async def test_llm_adjudicator_failure(mock_model):
-    with patch("prompt_complier.core.scoring.get_llm_provider") as mock_get_provider:
+    with patch("prompt_compiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
         mock_provider.generate.side_effect = Exception("LLM Error")
         mock_get_provider.return_value = mock_provider

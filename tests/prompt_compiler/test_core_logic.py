@@ -1,4 +1,4 @@
-from prompt_complier.core_logic import (
+from prompt_compiler.core_logic import (
     CandidatePrompt,
     OriginalPrompt,
     ScoringAlgorithm,

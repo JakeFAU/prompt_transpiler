@@ -1,8 +1,8 @@
-from prompt_complier.llm.anthropic import AnthropicAdapter
-from prompt_complier.llm.base import LLMProvider
-from prompt_complier.llm.gemini import GeminiAdapter
-from prompt_complier.llm.huggingface import HuggingFaceAdapter
-from prompt_complier.llm.openai import OpenAIAdapter
+from prompt_compiler.llm.anthropic import AnthropicAdapter
+from prompt_compiler.llm.base import LLMProvider
+from prompt_compiler.llm.gemini import GeminiAdapter
+from prompt_compiler.llm.huggingface import HuggingFaceAdapter
+from prompt_compiler.llm.openai import OpenAIAdapter
 
 
 def get_llm_provider(provider_name: str) -> LLMProvider:

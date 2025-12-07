@@ -2,56 +2,29 @@ from typing import Any
 
 from attrs import define, field
 
-from prompt_complier.config import settings
-from prompt_complier.core.interfaces import (
+from prompt_compiler.config import settings
+from prompt_compiler.core.interfaces import (
     IArchitect,
     IDecompiler,
     IHistorian,
     IJudge,
     IPilot,
 )
-from prompt_complier.core.roles.architect import GPTArchitect
-from prompt_complier.core.roles.decompiler import GeminiDecompiler
-from prompt_complier.core.roles.historian import DefaultHistorian
-from prompt_complier.core.roles.pilot import DefaultPilot
-from prompt_complier.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
-from prompt_complier.dto.models import Model, ModelProviderType, PromptStyle, Provider
-from prompt_complier.llm.prompts.prompt_objects import (
+from prompt_compiler.core.registry import ModelRegistry
+from prompt_compiler.core.roles.architect import GPTArchitect
+from prompt_compiler.core.roles.decompiler import GeminiDecompiler
+from prompt_compiler.core.roles.historian import DefaultHistorian
+from prompt_compiler.core.roles.pilot import DefaultPilot
+from prompt_compiler.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
+from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
     ScoringAlgorithm,
 )
-from prompt_complier.utils.logging import get_logger
-from prompt_complier.utils.telemetry import telemetry
+from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
-
-# --- Helper for Dummy Models ---
-
-
-def create_dummy_model(model_name: str, provider_name: str) -> Model:
-    """Helper to create a Model object since we don't have a database yet."""
-    p_type = ModelProviderType.API
-    normalized_provider = provider_name.lower().strip()
-    if "huggingface" in normalized_provider:
-        p_type = ModelProviderType.HUGGINGFACE
-
-    style = PromptStyle.MARKDOWN
-    if "claude" in model_name.lower():
-        style = PromptStyle.XML
-
-    return Model(
-        provider=Provider(
-            provider=normalized_provider,
-            provider_type=p_type,
-        ),
-        model_name=model_name,
-        supports_system_messages=True,
-        context_window_size=8192,
-        prompt_style=style,
-        supports_json_mode=True,
-        prompting_tips="Be concise.",
-    )
 
 
 def _default_architect() -> IArchitect:
@@ -88,6 +61,9 @@ class PromptCompilerPipeline:
     architect: IArchitect = field(factory=_default_architect)
     pilot: IPilot = field(factory=DefaultPilot)
     judge: IJudge = field(factory=_default_judge)
+
+    # Model Registry
+    registry: ModelRegistry = field(factory=ModelRegistry)
 
     # Injectable Scoring Strategy
     scoring_algorithm: ScoringAlgorithm = field(factory=WeightedScoreAlgorithm)
@@ -152,9 +128,9 @@ class PromptCompilerPipeline:
 
         try:
             # 1. Setup Models
-            # Now we use passed providers
-            src_model_obj = create_dummy_model(source_model, source_provider)
-            tgt_model_obj = create_dummy_model(target_model, target_provider)
+            # Now we use passed providers and the registry
+            src_model_obj = self.registry.get_model(source_model, source_provider)
+            tgt_model_obj = self.registry.get_model(target_model, target_provider)
 
             original = OriginalPrompt(prompt=raw_prompt, model=src_model_obj)
 
@@ -236,19 +212,28 @@ class PromptCompilerPipeline:
         return candidate
 
 
-async def compile_pipeline(
+async def compile_pipeline(  # noqa: PLR0913
     raw_text: str,
     source_model_name: str,
     target_model_name: str,
     source_provider: str = "openai",
     target_provider: str = "openai",
+    max_retries: int | None = None,
+    score_threshold: float | None = None,
 ) -> CandidatePrompt:
     """Entry point for the CLI or API."""
-    pipeline = PromptCompilerPipeline()
+    kwargs: dict[str, Any] = {}
+    if max_retries is not None:
+        kwargs["max_retries"] = max_retries
+    if score_threshold is not None:
+        kwargs["score_threshold"] = score_threshold
+
+    pipeline = PromptCompilerPipeline(**kwargs)
     return await pipeline.run(
         raw_text,
         source_model_name,
         target_model_name,
         source_provider=source_provider,
         target_provider=target_provider,
+        max_retries=max_retries,
     )

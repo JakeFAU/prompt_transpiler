@@ -9,7 +9,7 @@ It also provides utility functions for discovering available providers.
 from abc import ABC, abstractmethod
 from typing import Any
 
-from prompt_complier.config import settings
+from prompt_compiler.config import settings
 
 
 class LLMProvider(ABC):

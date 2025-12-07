@@ -3,7 +3,7 @@ from typing import Any
 import marshmallow as ma
 from attrs import define, field, validators
 
-from prompt_complier.dto.models import Model, ModelSchema
+from prompt_compiler.dto.models import Model, ModelSchema
 
 
 @define(kw_only=True)

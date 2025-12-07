@@ -2,12 +2,12 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from prompt_complier.llm.huggingface import HuggingFaceAdapter
+from prompt_compiler.llm.huggingface import HuggingFaceAdapter
 
 
 @pytest.fixture(autouse=True)
 def mock_settings(mocker):
-    mock_conf = mocker.patch("prompt_complier.llm.huggingface.settings")
+    mock_conf = mocker.patch("prompt_compiler.llm.huggingface.settings")
     mock_conf.HUGGINGFACE_API_KEY = "hf_token"
     mock_conf.HUGGINGFACE.TEMPERATURE = 0.0
     return mock_conf
@@ -15,12 +15,12 @@ def mock_settings(mocker):
 
 @pytest.fixture
 def mock_hf_client(mocker):
-    return mocker.patch("prompt_complier.llm.huggingface.AsyncInferenceClient")
+    return mocker.patch("prompt_compiler.llm.huggingface.AsyncInferenceClient")
 
 
 @pytest.fixture
 def mock_list_models(mocker):
-    return mocker.patch("prompt_complier.llm.huggingface.list_models")
+    return mocker.patch("prompt_compiler.llm.huggingface.list_models")
 
 
 @pytest.mark.asyncio

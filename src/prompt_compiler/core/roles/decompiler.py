@@ -2,19 +2,19 @@ import json
 
 from attrs import define
 
-from prompt_complier.core.exceptions import DecompilationError
-from prompt_complier.core.interfaces import IDecompiler
-from prompt_complier.dto.models import (
+from prompt_compiler.core.exceptions import DecompilationError
+from prompt_compiler.core.interfaces import IDecompiler
+from prompt_compiler.dto.models import (
     IntermediateRepresentation,
     IntermediateRepresentationData,
     IntermediateRepresentationMeta,
     IntermediateRepresentationSpec,
     Model,
 )
-from prompt_complier.llm.factory import get_llm_provider
-from prompt_complier.llm.prompts.prompt_objects import OriginalPrompt
-from prompt_complier.utils.logging import get_logger
-from prompt_complier.utils.telemetry import telemetry
+from prompt_compiler.llm.factory import get_llm_provider
+from prompt_compiler.llm.prompts.prompt_objects import OriginalPrompt
+from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
 
