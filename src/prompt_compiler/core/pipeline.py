@@ -10,12 +10,12 @@ from prompt_compiler.core.interfaces import (
     IJudge,
     IPilot,
 )
+from prompt_compiler.core.registry import ModelRegistry
 from prompt_compiler.core.roles.architect import GPTArchitect
 from prompt_compiler.core.roles.decompiler import GeminiDecompiler
 from prompt_compiler.core.roles.historian import DefaultHistorian
 from prompt_compiler.core.roles.pilot import DefaultPilot
 from prompt_compiler.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
-from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
 from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
@@ -25,33 +25,6 @@ from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
-
-# --- Helper for Dummy Models ---
-
-
-def create_dummy_model(model_name: str, provider_name: str) -> Model:
-    """Helper to create a Model object since we don't have a database yet."""
-    p_type = ModelProviderType.API
-    normalized_provider = provider_name.lower().strip()
-    if "huggingface" in normalized_provider:
-        p_type = ModelProviderType.HUGGINGFACE
-
-    style = PromptStyle.MARKDOWN
-    if "claude" in model_name.lower():
-        style = PromptStyle.XML
-
-    return Model(
-        provider=Provider(
-            provider=normalized_provider,
-            provider_type=p_type,
-        ),
-        model_name=model_name,
-        supports_system_messages=True,
-        context_window_size=8192,
-        prompt_style=style,
-        supports_json_mode=True,
-        prompting_tips="Be concise.",
-    )
 
 
 def _default_architect() -> IArchitect:
@@ -88,6 +61,9 @@ class PromptCompilerPipeline:
     architect: IArchitect = field(factory=_default_architect)
     pilot: IPilot = field(factory=DefaultPilot)
     judge: IJudge = field(factory=_default_judge)
+
+    # Model Registry
+    registry: ModelRegistry = field(factory=ModelRegistry)
 
     # Injectable Scoring Strategy
     scoring_algorithm: ScoringAlgorithm = field(factory=WeightedScoreAlgorithm)
@@ -152,9 +128,9 @@ class PromptCompilerPipeline:
 
         try:
             # 1. Setup Models
-            # Now we use passed providers
-            src_model_obj = create_dummy_model(source_model, source_provider)
-            tgt_model_obj = create_dummy_model(target_model, target_provider)
+            # Now we use passed providers and the registry
+            src_model_obj = self.registry.get_model(source_model, source_provider)
+            tgt_model_obj = self.registry.get_model(target_model, target_provider)
 
             original = OriginalPrompt(prompt=raw_prompt, model=src_model_obj)
 

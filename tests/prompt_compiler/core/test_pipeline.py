@@ -12,7 +12,6 @@ from prompt_compiler.core.interfaces import (
 from prompt_compiler.core.pipeline import (
     PromptCompilerPipeline,
     compile_pipeline,
-    create_dummy_model,
 )
 from prompt_compiler.dto.models import (
     IntermediateRepresentation,
@@ -237,13 +236,3 @@ async def test_compile_pipeline_entry_point():
 
         assert result == "result"  # type: ignore
         mock_instance.run.assert_called_once()
-
-
-def test_create_dummy_model_branches():
-    # Test HuggingFace
-    model = create_dummy_model("bert", "huggingface")
-    assert model.provider.provider_type == ModelProviderType.HUGGINGFACE
-
-    # Test Claude (XML style)
-    model = create_dummy_model("claude-3", "anthropic")
-    assert model.prompt_style == PromptStyle.XML
