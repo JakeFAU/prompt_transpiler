@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import sys
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as get_version
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +11,19 @@ import click
 from prompt_compiler.config import settings
 from prompt_compiler.core.pipeline import compile_pipeline
 from prompt_compiler.utils.logging import get_logger
+
+
+def _get_version() -> str:
+    """Get the package version, falling back to VERSION.txt if not installed."""
+    try:
+        return get_version("prompt-complier")
+    except PackageNotFoundError:
+        # Fallback for when package is not installed (e.g., CI/CD, development)
+        version_file = Path(__file__).parent.parent.parent / "VERSION.txt"
+        if version_file.exists():
+            return version_file.read_text().strip()
+        return "0.0.0"
+
 
 logger = get_logger(__name__)
 
@@ -173,7 +188,7 @@ def _configure_logging(verbose: int, quiet: bool) -> str:
     show_default=True,
     help="Enable or disable OpenTelemetry.",
 )
-@click.version_option(package_name="prompt-complier")
+@click.version_option(version=_get_version())
 def main(  # noqa: PLR0913
     prompt_input: str | None,
     output: Path | None,
