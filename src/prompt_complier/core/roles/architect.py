@@ -5,7 +5,7 @@ from attrs import define
 from prompt_complier.core.exceptions import ArchitectureError
 from prompt_complier.core.interfaces import IArchitect
 from prompt_complier.dto.models import IntermediateRepresentation, Model
-from prompt_complier.llm.openai import OpenAIAdapter
+from prompt_complier.llm.factory import get_llm_provider
 from prompt_complier.llm.prompts.prompt_objects import CandidatePrompt
 from prompt_complier.utils.logging import get_logger
 from prompt_complier.utils.telemetry import telemetry
@@ -16,15 +16,13 @@ logger = get_logger(__name__)
 @define
 class GPTArchitect(IArchitect):
     """
-    Architect implementation using GPT-4.
+    Architect implementation using an LLM.
 
     The Architect's role is to take an Intermediate Representation (IR) of a prompt
     and synthesize a new Candidate Prompt optimized for a specific target model.
-    It acts as the creative engine, applying prompt engineering best practices
-    tailored to the target model's known preferences (e.g., XML tags for Claude,
-    specific system instructions for Llama).
     """
 
+    provider_name: str = "openai"
     model_name: str = "gpt-4-turbo"
 
     @telemetry.instrument(name="architect.design_prompt")
@@ -36,22 +34,14 @@ class GPTArchitect(IArchitect):
     ) -> CandidatePrompt:
         """
         Generate a new prompt candidate based on the IR and optional feedback.
-
-        Args:
-            ir: The Intermediate Representation specification of the prompt's intent.
-            target_model: The model the new prompt is being designed for.
-            feedback: Optional feedback from a previous iteration (e.g., from the Judge)
-                      to guide the optimization.
-
-        Returns:
-            CandidatePrompt: A wrapper containing the generated prompt text and model metadata.
-
-        Raises:
-            ArchitectureError: If the LLM provider fails to generate a response.
         """
-        logger.info("Architect designing prompt", target_model=target_model.model_name)
+        logger.info(
+            "Architect designing prompt",
+            target_model=target_model.model_name,
+            architect_model=self.model_name,
+        )
 
-        provider = OpenAIAdapter()
+        provider = get_llm_provider(self.provider_name)
 
         spec_text = (
             f"Primary Intent: {ir.spec.primary_intent}\n"

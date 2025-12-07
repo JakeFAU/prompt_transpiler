@@ -21,6 +21,10 @@ openai = "^2.9.0"
 google-genai = "^1.53.0"
 anthropic = "^0.75.0"
 huggingface-hub = "^1.2.1"
+click = "^8.3.1"
+
+[tool.poetry.scripts]
+prompt-compiler = "prompt_complier.cli:main"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^9.0.1"
@@ -70,3 +74,6 @@ disallow_untyped_decorators = false
 addopts = "--cov=prompt_complier --cov-report=term-missing"
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.coverage.run]
+omit = ["src/prompt_complier/cli.py"]

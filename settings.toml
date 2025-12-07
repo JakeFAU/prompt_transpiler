@@ -24,6 +24,26 @@ TEMPERATURE = 0.0
 DEFAULT_HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
 TEMPERATURE = 0.0
 
+[default.roles.architect]
+PROVIDER = "openai"
+MODEL = "gpt-4o"
+
+[default.roles.decompiler]
+PROVIDER = "gemini"
+MODEL = "gemini-1.5-flash"
+
+[default.roles.historian]
+PROVIDER = "openai"
+MODEL = "gpt-4o-mini"
+
+[default.roles.pilot]
+PROVIDER = "openai"
+MODEL = "gpt-4o"
+
+[default.roles.judge]
+PROVIDER = "openai"
+MODEL = "gpt-4o"
+
 [default.compiler]
 MAX_RETRIES = 3
 SCORE_THRESHOLD = 0.8

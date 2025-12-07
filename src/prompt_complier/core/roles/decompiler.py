@@ -11,7 +11,7 @@ from prompt_complier.dto.models import (
     IntermediateRepresentationSpec,
     Model,
 )
-from prompt_complier.llm.gemini import GeminiAdapter
+from prompt_complier.llm.factory import get_llm_provider
 from prompt_complier.llm.prompts.prompt_objects import OriginalPrompt
 from prompt_complier.utils.logging import get_logger
 from prompt_complier.utils.telemetry import telemetry
@@ -22,36 +22,30 @@ logger = get_logger(__name__)
 @define
 class GeminiDecompiler(IDecompiler):
     """
-    Decompiler implementation using Gemini 1.5 Pro.
+    Decompiler implementation using an LLM.
 
     The Decompiler's role is to analyze an existing "Original Prompt" and
     reverse-engineer it into a structured, model-agnostic Intermediate Representation (IR).
-    This IR serves as the blueprint for the Architect to rebuild the prompt.
     """
 
+    provider_name: str = "gemini"
     model_name: str = "gemini-1.5-pro"
 
     @telemetry.instrument(name="decompiler.decompile")
     async def decompile(
-        self, original_prompt: OriginalPrompt, target_model: Model
+        self,
+        original_prompt: OriginalPrompt,
+        target_model: Model,
     ) -> IntermediateRepresentation:
         """
         Decompile a raw prompt into a structured specification.
-
-        Args:
-            original_prompt: The source prompt object containing the raw text.
-            target_model: The model we eventually want to target (metadata only at this stage).
-
-        Returns:
-            IntermediateRepresentation: The structured intent, constraints, and data extracted
-                                        from the prompt.
-
-        Raises:
-            DecompilationError: If the model output is not valid JSON or fails to match the schema.
         """
-        logger.info("Decompiler starting analysis")
+        logger.info(
+            "Decompiler starting analysis",
+            decompiler_model=self.model_name,
+        )
 
-        provider = GeminiAdapter()
+        provider = get_llm_provider(self.provider_name)
 
         system_prompt = (
             "You are an expert Prompt Engineer. "
