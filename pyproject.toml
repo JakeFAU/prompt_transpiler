@@ -6,6 +6,9 @@ authors = [{ name = "Jacob Bourne", email = "jacob.bourne@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.13"
 
+[project.scripts]
+prompt-compiler = "prompt_compiler.cli:main"
+
 [tool.poetry.dependencies]
 python = ">=3.13,<3.15"
 attrs = "^25.4.0"

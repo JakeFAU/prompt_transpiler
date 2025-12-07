@@ -15,7 +15,11 @@ from prompt_compiler.core.roles.architect import GPTArchitect
 from prompt_compiler.core.roles.decompiler import GeminiDecompiler
 from prompt_compiler.core.roles.historian import DefaultHistorian
 from prompt_compiler.core.roles.pilot import DefaultPilot
-from prompt_compiler.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
+from prompt_compiler.core.scoring import (
+    LLMAdjudicator,
+    WeightedScoreAlgorithm,
+    get_scoring_algorithm,
+)
 from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
@@ -109,7 +113,7 @@ class PromptCompilerPipeline:
         Args:
             raw_prompt: The original prompt text to be converted.
             source_model: Name of the model the original prompt was designed for (e.g., 'gpt-4').
-            target_model: Name of the model to optimize for (e.g., 'gemini-1.5-pro').
+            target_model: Name of the model to optimize for (e.g., 'gemini-2.5-pro').
             max_retries: Optional override for maximum optimization attempts.
             source_provider: Provider for source model (default: openai).
             target_provider: Provider for target model (default: openai).
@@ -220,6 +224,7 @@ async def compile_pipeline(  # noqa: PLR0913
     target_provider: str = "openai",
     max_retries: int | None = None,
     score_threshold: float | None = None,
+    scoring_algo: str | None = None,
 ) -> CandidatePrompt:
     """Entry point for the CLI or API."""
     kwargs: dict[str, Any] = {}
@@ -227,6 +232,14 @@ async def compile_pipeline(  # noqa: PLR0913
         kwargs["max_retries"] = max_retries
     if score_threshold is not None:
         kwargs["score_threshold"] = score_threshold
+
+    # Resolve scoring algorithm
+    # 1. CLI/Arg override
+    # 2. Settings
+    # 3. Default "weighted"
+    algo_name = scoring_algo or settings.get("compiler.scoring_algorithm", "weighted")
+    algorithm = get_scoring_algorithm(algo_name)
+    kwargs["scoring_algorithm"] = algorithm
 
     pipeline = PromptCompilerPipeline(**kwargs)
     return await pipeline.run(

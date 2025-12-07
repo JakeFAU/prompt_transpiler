@@ -40,7 +40,7 @@ def test_cli_with_text_input(mock_pipeline: AsyncMock, runner: CliRunner) -> Non
     mock_result.prompt = "Optimized Prompt"
     mock_pipeline.return_value = mock_result
 
-    result = runner.invoke(main, ["Simple prompt", "-s", "gpt-4", "-t", "gemini-1.5"])
+    result = runner.invoke(main, ["Simple prompt", "-s", "gpt-4", "-t", "gemini-2.5"])
 
     if result.exit_code != 0:
         print(result.output)
@@ -51,7 +51,7 @@ def test_cli_with_text_input(mock_pipeline: AsyncMock, runner: CliRunner) -> Non
     args, _kwargs = mock_pipeline.call_args
     assert args[0] == "Simple prompt"
     assert args[1] == "gpt-4"
-    assert args[2] == "gemini-1.5"
+    assert args[2] == "gemini-2.5"
 
 
 @patch("prompt_compiler.cli.compile_pipeline", new_callable=AsyncMock)

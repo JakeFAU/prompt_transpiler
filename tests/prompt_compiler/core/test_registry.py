@@ -12,9 +12,9 @@ def test_registry_default_models():
     assert gpt4.prompt_style == PromptStyle.MARKDOWN
 
     # Test Gemini
-    gemini = registry.get_model("gemini-1.5-pro", "google")
-    assert gemini.model_name == "gemini-1.5-pro"
-    assert gemini.provider.provider == "google"
+    gemini = registry.get_model("gemini-2.5-pro", "gemini")
+    assert gemini.model_name == "gemini-2.5-pro"
+    assert gemini.provider.provider == "gemini"
     assert gemini.prompt_style == PromptStyle.MARKDOWN
 
 

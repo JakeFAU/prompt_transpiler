@@ -51,7 +51,7 @@ async def test_llm_adjudicator_success(mock_model):
         response_data = {
             "primary_intent_score": 0.9,
             "tone_voice_score": 0.8,
-            "constraint_scores": {"c1": 1.0},
+            "constraint_scores": [{"constraint": "c1", "score": 1.0}],
             "feedback_hint": "Good job",
         }
         mock_provider.generate.return_value = json.dumps(response_data)

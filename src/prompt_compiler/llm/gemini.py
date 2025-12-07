@@ -46,7 +46,7 @@ class GeminiAdapter(LLMProvider):
         Args:
             system_prompt: The system instruction.
             user_prompt: The user input.
-            model_name: The name of the Gemini model (e.g., "gemini-1.5-flash").
+            model_name: The name of the Gemini model (e.g., "gemini-2.5-flash").
             config: Configuration parameters (e.g., temperature).
             response_schema: Optional JSON schema for structured outputs.
             **kwargs: Additional arguments passed to the Gemini API.

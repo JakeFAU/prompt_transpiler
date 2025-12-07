@@ -5,6 +5,7 @@ This module contains the `OpenAIAdapter`, which implements the `LLMProvider` int
 for interacting with OpenAI's chat completion API.
 """
 
+from copy import deepcopy
 from typing import Any
 
 import openai
@@ -16,6 +17,44 @@ from prompt_compiler.utils.logging import get_logger
 from .base import LLMProvider
 
 logger = get_logger(__name__)
+
+
+def _prepare_strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """
+    OpenAI strict JSON schema requires:
+    - additionalProperties: false on every object
+    - required must include every property key (no extras)
+    This helper walks the schema, enforces those rules, and returns a new copy so callers
+    are not mutated.
+    """
+
+    def _walk(node: Any) -> None:
+        if isinstance(node, dict):
+            if node.get("type") == "object":
+                if node.get("additionalProperties") is not False:
+                    node["additionalProperties"] = False
+
+                if "properties" in node:
+                    node["required"] = list(node["properties"].keys())
+
+            for key in ("properties", "patternProperties", "$defs", "definitions"):
+                for child in (node.get(key) or {}).values():
+                    _walk(child)
+
+            if "items" in node:
+                _walk(node["items"])
+
+            for key in ("anyOf", "oneOf", "allOf"):
+                for child in node.get(key, []) or []:
+                    _walk(child)
+
+        elif isinstance(node, list):
+            for item in node:
+                _walk(item)
+
+    schema_copy = deepcopy(schema)
+    _walk(schema_copy)
+    return schema_copy
 
 
 class OpenAIAdapter(LLMProvider):
@@ -69,9 +108,10 @@ class OpenAIAdapter(LLMProvider):
         # Handle Structured Outputs
         if response_schema:
             logger.debug("Enforcing JSON Schema strict mode")
+            safe_schema = _prepare_strict_schema(response_schema)
             params["response_format"] = {
                 "type": "json_schema",
-                "json_schema": {"name": "ir_response", "strict": True, "schema": response_schema},
+                "json_schema": {"name": "ir_response", "strict": True, "schema": safe_schema},
             }
         elif params.get("response_format") == {"type": "json_object"}:
             logger.debug("Using legacy JSON mode")

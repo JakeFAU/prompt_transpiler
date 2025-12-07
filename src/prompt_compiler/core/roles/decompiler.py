@@ -29,7 +29,37 @@ class GeminiDecompiler(IDecompiler):
     """
 
     provider_name: str = "gemini"
-    model_name: str = "gemini-1.5-pro"
+    model_name: str = "gemini-2.5-pro"
+
+    def _get_system_prompt(self) -> str:
+        return """
+            You are an expert LLM Decompiler. Your job is to convert raw prompts into a
+            Model-Agnostic Intermediate Representation (IR).
+
+            ### CRITICAL INSTRUCTION: "Template" vs "Payload"
+            You must classify the user's request into one of two types:
+
+            1. **TYPE A: ABSTRACT TEMPLATE**
+            - User asks: "Write a prompt to summarize movies."
+            - Action: Create a reusable tool.
+            - Variables: Extract "movies" as `{{variable}}`.
+
+            2. **TYPE B: CONCRETE PAYLOAD (Most Common)**
+            - User asks: "Summarize 'Fight Club'."
+            - Action: The user wants a result NOW for this specific entity.
+            - **rule**: 'Fight Club' is NOT a variable. It is **CONTEXT**.
+            - **rule**: Do NOT extract specific entities as variables if the user provided them.
+            - **rule**: Embed the specific data directly into the `intent` or `context` fields.
+
+            ### JSON Output Schema
+            {
+                "primary_intent": "The core goal (e.g. 'Summarize Fight Club using emojis')",
+                "constraints": ["No text", "Emojis only"],
+                "context": "The specific data to process (e.g. 'Movie: Fight Club')",
+                "variables": [], // KEEP EMPTY for Type B requests!
+                "tone_voice": "Playful"
+            }
+        """
 
     @telemetry.instrument(name="decompiler.decompile")
     async def decompile(
@@ -47,11 +77,7 @@ class GeminiDecompiler(IDecompiler):
 
         provider = get_llm_provider(self.provider_name)
 
-        system_prompt = (
-            "You are an expert Prompt Engineer. "
-            "Your task is to analyze the given prompt and reverse-engineer it into "
-            "a structured specification (IR)."
-        )
+        system_prompt = self._get_system_prompt()
 
         ir_schema = {
             "type": "object",

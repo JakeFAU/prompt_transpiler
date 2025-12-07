@@ -36,7 +36,7 @@ async def test_generate_simple(mock_gemini):
     response = await adapter.generate(
         system_prompt="System",
         user_prompt="User",
-        model_name="gemini-1.5-flash",
+        model_name="gemini-2.5-flash",
         config={"max_tokens": 100},
     )
 
@@ -44,7 +44,7 @@ async def test_generate_simple(mock_gemini):
     mock_client_instance.aio.models.generate_content.assert_called_once()
 
     call_kwargs = mock_client_instance.aio.models.generate_content.call_args.kwargs
-    assert call_kwargs["model"] == "gemini-1.5-flash"
+    assert call_kwargs["model"] == "gemini-2.5-flash"
     assert call_kwargs["contents"] == "User"
 
     config_arg = call_kwargs["config"]
@@ -68,7 +68,7 @@ async def test_generate_with_schema(mock_gemini):
     await adapter.generate(
         system_prompt="System",
         user_prompt="User",
-        model_name="gemini-1.5-flash",
+        model_name="gemini-2.5-flash",
         config={},
         response_schema=response_schema,
     )
@@ -86,7 +86,7 @@ async def test_available_models(mock_gemini):
     mock_client_instance = mock_gemini.return_value
 
     mock_model1 = MagicMock()
-    mock_model1.name = "models/gemini-1.5-flash"
+    mock_model1.name = "models/gemini-2.5-flash"
     mock_model2 = MagicMock()
     mock_model2.name = "models/gemini-1.0-pro"
     mock_model3 = MagicMock()
@@ -103,5 +103,5 @@ async def test_available_models(mock_gemini):
     adapter = GeminiAdapter()
     models = await adapter.available_models()
 
-    assert "gemini-1.5-flash" in models
+    assert "gemini-2.5-flash" in models
     assert "gemini-1.0-pro" in models
