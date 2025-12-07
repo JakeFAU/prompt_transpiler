@@ -170,7 +170,6 @@ def main(  # noqa: PLR0913
                 raise
 
     asyncio.run(run_async())
-    asyncio.run(run_async())
 
 
 if __name__ == "__main__":
