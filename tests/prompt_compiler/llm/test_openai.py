@@ -1,3 +1,4 @@
+from copy import deepcopy
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -61,7 +62,14 @@ async def test_generate_with_schema(mock_openai):
     mock_client_instance.chat.completions.create = AsyncMock(return_value=mock_completion)
 
     adapter = OpenAIAdapter()
-    response_schema = {"type": "object", "properties": {"foo": {"type": "string"}}}
+    response_schema = {
+        "type": "object",
+        "properties": {
+            "foo": {"type": "string"},
+            "nested": {"type": "object", "properties": {"bar": {"type": "number"}}},
+        },
+    }
+    original_schema = deepcopy(response_schema)
 
     await adapter.generate(
         system_prompt="System",
@@ -74,7 +82,12 @@ async def test_generate_with_schema(mock_openai):
     call_kwargs = mock_client_instance.chat.completions.create.call_args.kwargs
     assert "response_format" in call_kwargs
     assert call_kwargs["response_format"]["type"] == "json_schema"
-    assert call_kwargs["response_format"]["json_schema"]["schema"] == response_schema
+    enforced_schema = call_kwargs["response_format"]["json_schema"]["schema"]
+    assert enforced_schema["additionalProperties"] is False
+    assert enforced_schema["properties"]["nested"]["additionalProperties"] is False
+    assert enforced_schema["required"] == ["foo", "nested"]
+    # Ensure original schema is untouched
+    assert "additionalProperties" not in original_schema
 
 
 @pytest.mark.asyncio

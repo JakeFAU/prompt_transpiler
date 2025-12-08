@@ -1,4 +1,5 @@
 import json
+import math
 
 from attrs import define
 
@@ -14,6 +15,10 @@ from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.telemetry import telemetry
 
 logger = get_logger(__name__)
+
+CRIT_VAL: float = 0.9
+MAJOR_VAL: float = 0.7
+MINOR_VAL: float = 0.5
 
 
 @define
@@ -55,6 +60,105 @@ class WeightedScoreAlgorithm(ScoringAlgorithm):
 
 
 @define
+class GeometricMeanAlgorithm(ScoringAlgorithm):
+    """
+    Strict 'Compiler Mode'. If any component is weak, the whole score tanks.
+    Best for code generation, JSON formatting, or strict constraints.
+    """
+
+    def calculate_score(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
+        # Use a small epsilon to prevent log(0) or total zeroing if strictness isn't desired
+        epsilon = 0.01
+
+        scores = [
+            max(candidate.primary_intent_score or 0.0, epsilon),
+            max(candidate.tone_voice_score or 0.0, epsilon),
+        ]
+
+        # Add individual constraint scores
+        if candidate.constraint_scores:
+            scores.extend([max(s, epsilon) for s in candidate.constraint_scores.values()])
+
+        # Geometric Mean = (x1 * x2 * ... * xn)^(1/n)
+        product = math.prod(scores)
+        return float(pow(product, 1.0 / len(scores)))
+
+
+@define
+class PenaltyAlgorithm(ScoringAlgorithm):
+    """
+    Linter style. Starts at 100% and deducts points for failures.
+    Good for ensuring compliance without demanding perfection.
+    """
+
+    MINOR_PENALTY: float = 0.1
+    MAJOR_PENALTY: float = 0.5
+    CRITICAL_PENALTY: float = 1.0
+
+    def calculate_score(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
+        score = 1.0
+
+        # 1. Intent Failure (Critical)
+        if (candidate.primary_intent_score or 0) < CRIT_VAL:
+            score -= self.CRITICAL_PENALTY
+
+        # 2. Constraints (Major)
+        if candidate.constraint_scores:
+            for _rule, compliance in candidate.constraint_scores.items():
+                if compliance < MAJOR_VAL:
+                    score -= self.MAJOR_PENALTY
+
+        # 3. Tone (Minor)
+        if (candidate.tone_voice_score or 0) < MINOR_VAL:
+            score -= self.MINOR_PENALTY
+
+        return max(0.0, score)
+
+
+@define
+class DynamicScoringAlgorithm(ScoringAlgorithm):
+    """
+    Adapts based on the prompt type detected by the Decompiler.
+    """
+
+    def calculate_score(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
+        # Check metadata from the Decompiler step (you'll need to populate this in decompiler.py)
+
+        mode = getattr(original, "mode", "balanced")
+
+        if mode == "strict_code":
+            weights = {"intent": 0.4, "tone": 0.0, "constraints": 0.6}
+        elif mode == "creative":
+            weights = {"intent": 0.4, "tone": 0.5, "constraints": 0.1}
+        else:
+            weights = {"intent": 0.5, "tone": 0.2, "constraints": 0.3}
+
+        score = 0.0
+        score += (candidate.primary_intent_score or 0) * weights["intent"]
+        score += (candidate.tone_voice_score or 0) * weights["tone"]
+
+        if candidate.constraint_scores:
+            avg_constraint = sum(candidate.constraint_scores.values()) / len(
+                candidate.constraint_scores
+            )
+            score += avg_constraint * weights["constraints"]
+
+        return score
+
+
+def get_scoring_algorithm(name: str) -> ScoringAlgorithm:
+    """Factory to get scoring algorithm by name."""
+    mapping = {
+        "weighted": WeightedScoreAlgorithm(),
+        "geometric": GeometricMeanAlgorithm(),
+        "penalty": PenaltyAlgorithm(),
+        "dynamic": DynamicScoringAlgorithm(),
+    }
+    # Default to weighted if unknown
+    return mapping.get(name.lower(), WeightedScoreAlgorithm())
+
+
+@define
 class LLMAdjudicator(IJudge):
     """
     Judge Role: Measures the quality of the response using an LLM.
@@ -93,8 +197,15 @@ class LLMAdjudicator(IJudge):
                 "primary_intent_score": {"type": "number"},
                 "tone_voice_score": {"type": "number"},
                 "constraint_scores": {
-                    "type": "object",
-                    "additionalProperties": {"type": "number"},
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "constraint": {"type": "string"},
+                            "score": {"type": "number"},
+                        },
+                        "required": ["constraint", "score"],
+                    },
                 },
                 "feedback_hint": {"type": "string"},
             },
@@ -120,7 +231,15 @@ class LLMAdjudicator(IJudge):
 
             candidate.primary_intent_score = data.get("primary_intent_score", 0.0)
             candidate.tone_voice_score = data.get("tone_voice_score", 0.0)
-            candidate.constraint_scores = data.get("constraint_scores", {})
+            # Convert array of {constraint, score} into a dict for internal use
+            raw_constraints = data.get("constraint_scores", []) or []
+            constraint_scores = {}
+            for item in raw_constraints:
+                constraint = item.get("constraint")
+                score = item.get("score")
+                if constraint is not None and score is not None:
+                    constraint_scores[str(constraint)] = float(score)
+            candidate.constraint_scores = constraint_scores
             candidate.feedback = data.get("feedback_hint", "")
 
             # We return 0.0 because the *Pipeline* will calculate the final score using the Strategy

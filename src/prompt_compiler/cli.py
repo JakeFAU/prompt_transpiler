@@ -115,7 +115,7 @@ def _configure_logging(verbose: int, quiet: bool) -> str:
 @click.option(
     "--target",
     "-t",
-    default="gemini-1.5-flash",
+    default="gemini-2.5-flash",
     show_default=True,
     help="Target model name.",
 )
@@ -140,6 +140,10 @@ def _configure_logging(verbose: int, quiet: bool) -> str:
     "--score-threshold",
     type=float,
     help="Score threshold to accept a prompt (0.0 to 1.0).",
+)
+@click.option(
+    "--scoring-algo",
+    help="Scoring algorithm (weighted, geometric, penalty, dynamic).",
 )
 @click.option(
     "--architect-provider",
@@ -198,6 +202,7 @@ def main(  # noqa: PLR0913
     target_provider: str,
     max_retries: int | None,
     score_threshold: float | None,
+    scoring_algo: str | None,
     architect_provider: str | None,
     architect_model: str | None,
     decompiler_provider: str | None,
@@ -268,6 +273,7 @@ def main(  # noqa: PLR0913
                 target_provider=target_provider,
                 max_retries=max_retries,
                 score_threshold=score_threshold,
+                scoring_algo=scoring_algo,
             )
 
             # 5. Handle Output

@@ -13,7 +13,7 @@ DEFAULT_OPENAI_THINKING_MODEL = "gpt-4o"
 TEMPERATURE = 0.0
 
 [default.gemini]
-DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 TEMPERATURE = 0.0
 
 [default.anthropic]
@@ -26,11 +26,11 @@ TEMPERATURE = 0.0
 
 [default.roles.architect]
 PROVIDER = "openai"
-MODEL = "gpt-4o"
+MODEL = "gpt-4o-mini"
 
 [default.roles.decompiler]
-PROVIDER = "gemini"
-MODEL = "gemini-1.5-flash"
+PROVIDER = "openai"
+MODEL = "gpt-4o-mini"
 
 [default.roles.historian]
 PROVIDER = "openai"
@@ -38,13 +38,14 @@ MODEL = "gpt-4o-mini"
 
 [default.roles.pilot]
 PROVIDER = "openai"
-MODEL = "gpt-4o"
+MODEL = "gpt-4o-mini"
 
 [default.roles.judge]
 PROVIDER = "openai"
-MODEL = "gpt-4o"
+MODEL = "gpt-4o-mini"
 
 [default.compiler]
 MAX_RETRIES = 3
 SCORE_THRESHOLD = 0.8
-EARLY_STOP_PATIENCE = 1 # Number of retries without improvement before stopping
+EARLY_STOP_PATIENCE = 1       # Number of retries without improvement before stopping
+SCORING_ALGORITHM = "dynamic"

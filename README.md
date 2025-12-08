@@ -86,7 +86,7 @@ MODEL = "gpt-4o"
 
 [default.roles.decompiler]
 PROVIDER = "gemini"
-MODEL = "gemini-1.5-flash"
+MODEL = "gemini-2.5-flash"
 
 [default.roles.judge]
 PROVIDER = "openai"
