@@ -56,9 +56,10 @@ class GeminiDecompiler(IDecompiler):
                 "primary_intent": "The core goal (e.g. 'Summarize Fight Club using emojis')",
                 "constraints": ["No text", "Emojis only"],
                 "context": "The specific data to process (e.g. 'Movie: Fight Club')",
-                "variables": [], // KEEP EMPTY for Type B requests!
+                "variables": [],
                 "tone_voice": "Playful"
             }
+            // Note: For Type B requests, the "variables" array should be kept empty.
         """
 
     @telemetry.instrument(name="decompiler.decompile")
