@@ -45,7 +45,7 @@ def _prepare_strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
                 _walk(node["items"])
 
             for key in ("anyOf", "oneOf", "allOf"):
-                for child in node.get(key, []) or []:
+                for child in node.get(key, []):
                     _walk(child)
 
         elif isinstance(node, list):
