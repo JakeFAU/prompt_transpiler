@@ -1,7 +1,7 @@
 prompt_compiler
 ===============
 
-.. automodule:: prompt_compiler
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 4
+
+   prompt_compiler

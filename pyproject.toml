@@ -41,6 +41,9 @@ tox = "^4.32.0"
 ruff = "^0.14.5"
 pre-commit = "^4.4.0"
 mypy = "^1.18.2"
+myst-parser = "^4.0.1"
+sphinx-copybutton = "^0.5.2"
+furo = "^2025.9.25"
 
 
 [tool.poetry.group.docs.dependencies]
