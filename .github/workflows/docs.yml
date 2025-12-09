@@ -37,7 +37,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          poetry run sphinx-apidoc -f -o docs/ ./src/prompt_compiler ./src/prompt_compiler/dto/models.py
+          poetry run sphinx-apidoc -f -o docs/ ./src/prompt_compiler
           poetry run sphinx-build -b html docs/ docs/_build/html
 
       # MODERN STEP 1: Upload the build result as an artifact
