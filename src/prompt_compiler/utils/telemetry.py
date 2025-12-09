@@ -28,15 +28,15 @@ R = TypeVar("R")
 
 
 class TelemetryManager:
-    _endabled: bool
-    _service_name: str
-    _tracer: trace.Tracer | None
-    _meter: metrics.Meter | None
-
     """
     A wrapper around OpenTelemetry that respects the USE_OPENTEL setting.
     If False, all operations are no-ops and no collectors are initialized.
     """
+
+    _enabled: bool
+    _service_name: str
+    _tracer: trace.Tracer | None
+    _meter: metrics.Meter | None
 
     def __init__(self) -> None:
         self._enabled = settings.USE_OPENTELEMETRY
@@ -54,7 +54,6 @@ class TelemetryManager:
             return
 
         try:
-            # 1. Setup Resource (Service Name, etc.)
             resource = Resource.create(
                 attributes={
                     "service.name": self._service_name,
@@ -62,36 +61,26 @@ class TelemetryManager:
                 }
             )
 
-            # 2. Setup Trace Provider
             provider = TracerProvider(resource=resource)
 
-            # 3. Configure Exporter (The part that causes connection errors)
             if settings.OPENTEL.OTEL_ENDPOINT:
-                # Production: Send to Jaeger/Tempo/Datadog
+                # Insecure=True is standard for local sidecars.
+                # For remote backends, you may need SSL/headers.
                 exporter = OTLPSpanExporter(endpoint=settings.OPENTEL.OTEL_ENDPOINT, insecure=True)
-                processor = BatchSpanProcessor(exporter)
             else:
-                # Local Debug: Just print to console if enabled but no endpoint
                 exporter = ConsoleSpanExporter()  # type: ignore[assignment]
-                processor = BatchSpanProcessor(exporter)
 
+            processor = BatchSpanProcessor(exporter)
             provider.add_span_processor(processor)
             trace.set_tracer_provider(provider)
 
-            # 4. Initialize Objects
             self._tracer = trace.get_tracer(self._service_name)
-            # Initialize the meter provider if needed, or just get the meter
-            # For simplicity, using the global metrics provider which might
-            # need setup if not standard
-            # But typically metrics.get_meter works if a provider is set globally.
-            # Here we just get it.
             self._meter = metrics.get_meter(self._service_name)
 
             logger.info(f"Telemetry initialized for {self._service_name}")
 
         except Exception as e:
             logger.error(f"Failed to initialize telemetry: {e}")
-            # Fallback to disabled to prevent app crash
             self._enabled = False
 
     @contextmanager
@@ -100,6 +89,7 @@ class TelemetryManager:
     ) -> Generator[trace.Span | None]:
         """
         Context manager for creating a span.
+
         Usage:
             with telemetry.span("my_operation", {"user_id": 123}):
                 do_work()
@@ -116,6 +106,7 @@ class TelemetryManager:
     def instrument(self, name: str | None = None) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Decorator to trace a function automatically.
+
         Usage:
             @telemetry.instrument()
             def my_func(): ...
@@ -139,19 +130,15 @@ class TelemetryManager:
     def get_counter(self, name: str, description: str = "", unit: str = "1") -> metrics.Counter:
         """
         Get or create a counter metric.
-        If telemetry is disabled, returns a NoOpCounter (implicitly handled by OTEL API
-        or we return a dummy if meter is None).
+        If telemetry is disabled, returns a NoOpCounter.
         """
         if not self._enabled or self._meter is None:
-            # Return a dummy object that mimics the Counter interface
             return cast(metrics.Counter, _NoOpCounter())
 
         return self._meter.create_counter(name, description=description, unit=unit)
 
     def get_histogram(self, name: str, description: str = "", unit: str = "1") -> metrics.Histogram:
-        """
-        Get or create a histogram metric.
-        """
+        """Get or create a histogram metric."""
         if not self._enabled or self._meter is None:
             return cast(metrics.Histogram, _NoOpHistogram())
 

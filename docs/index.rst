@@ -1,17 +1,25 @@
-.. prompt-complier documentation master file.
+.. prompt-compiler documentation master file.
 
-Welcome to prompt-complier's documentation!
-===========================================
+Prompt Compiler Documentation
+=============================
+
+A deterministic framework for treating LLM prompts as compiled code artifacts.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: API Reference:
 
    modules
 
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 1
+   :caption: Project Info:
+
+   changelog
+   contributing
+
+Indices
+=======
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
