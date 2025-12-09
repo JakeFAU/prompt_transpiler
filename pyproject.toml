@@ -4,13 +4,13 @@ version = "0.1.0"
 description = ""
 authors = [{ name = "Jacob Bourne", email = "jacob.bourne@gmail.com" }]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 
 [project.scripts]
 prompt-compiler = "prompt_compiler.cli:main"
 
 [tool.poetry.dependencies]
-python = ">=3.13,<3.15"
+python = ">=3.11,<3.15"
 attrs = "^25.4.0"
 dynaconf = "^3.2.12"
 marshmallow = "^4.1.0"
