@@ -157,6 +157,10 @@ cython_debug/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+gemini.md
+
 # Ignore dynaconf secret files
 .secrets.*
-gemini.md
+
+# Ignore AutoGen Spinx files
+docs/_build/

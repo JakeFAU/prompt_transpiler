@@ -42,6 +42,11 @@ ruff = "^0.14.5"
 pre-commit = "^4.4.0"
 mypy = "^1.18.2"
 
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "<9"
+sphinx-rtd-theme = "^3.0.2"
+
 [tool.poetry]
 packages = [{ include = "prompt_compiler", from = "src" }]
 
@@ -80,3 +85,6 @@ pythonpath = ["src"]
 
 [tool.coverage.run]
 omit = ["src/prompt_compiler/cli.py"]
+
+[tool.coverage.report]
+fail_under = 85

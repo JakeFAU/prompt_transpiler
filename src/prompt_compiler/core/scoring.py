@@ -5,6 +5,7 @@ from attrs import define
 
 from prompt_compiler.core.exceptions import EvaluationError
 from prompt_compiler.core.interfaces import IJudge
+from prompt_compiler.core.roles.base import BaseRole
 from prompt_compiler.llm.factory import get_llm_provider
 from prompt_compiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
@@ -159,95 +160,109 @@ def get_scoring_algorithm(name: str) -> ScoringAlgorithm:
 
 
 @define
-class LLMAdjudicator(IJudge):
+class LLMAdjudicator(IJudge, BaseRole):
     """
     Judge Role: Measures the quality of the response using an LLM.
     """
 
     provider_name: str = "openai"
     model_name: str = "gpt-4o"
+    scoring_algorithm: ScoringAlgorithm | None = None
+    score_threshold: float = 0.0
 
-    @telemetry.instrument(name="judge.evaluate")
+    @property
+    def role_name(self) -> str:
+        return "judge"
+
     async def evaluate(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
         """
         Runs the evaluation and returns 0.0 (legacy return).
         The component scores are updated on the Candidate object.
         """
-        logger.info("Judge evaluating candidate", judge_model=self.model_name)
+        attributes = self._get_base_attributes()
+        if self.scoring_algorithm:
+            attributes["prompt_compiler.judge.algorithm"] = (
+                self.scoring_algorithm.__class__.__name__
+            )
+        attributes["prompt_compiler.judge.strictness"] = self.score_threshold
 
-        provider = get_llm_provider(self.provider_name)
+        with telemetry.span(f"{self.role_name}.evaluate", attributes=attributes):
+            logger.info("Judge evaluating candidate", judge_model=self.model_name)
 
-        system_prompt = (
-            "You are a Judge. Compare the Baseline response and the Candidate response "
-            "based on the Intent."
-        )
+            provider = get_llm_provider(self.provider_name)
 
-        user_prompt = (
-            f"Original Prompt (Context): {original.prompt}\n"
-            f"Baseline Response: {original.response}\n"
-            f"Candidate Response: {candidate.response}\n\n"
-            "Rate the Candidate on scale 0.0 to 1.0 for: Primary Intent, Tone, Constraints.\n"
-            "Also provide a short constructive hint for the Architect to improve the prompt. "
-            "Do NOT leak the content of the Baseline response in the hint."
-        )
-
-        schema = {
-            "type": "object",
-            "properties": {
-                "primary_intent_score": {"type": "number"},
-                "tone_voice_score": {"type": "number"},
-                "constraint_scores": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "constraint": {"type": "string"},
-                            "score": {"type": "number"},
-                        },
-                        "required": ["constraint", "score"],
-                    },
-                },
-                "feedback_hint": {"type": "string"},
-            },
-            "required": [
-                "primary_intent_score",
-                "tone_voice_score",
-                "constraint_scores",
-                "feedback_hint",
-            ],
-        }
-
-        try:
-            response_text = await provider.generate(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                model_name=self.model_name,
-                config={"temperature": 0.0},
-                response_schema=schema,
+            system_prompt = (
+                "You are a Judge. Compare the Baseline response and the Candidate response "
+                "based on the Intent."
             )
 
-            data = json.loads(response_text)
-            logger.debug("Judge scores", scores=data)
+            user_prompt = (
+                f"Original Prompt (Context): {original.prompt}\n"
+                f"Baseline Response: {original.response}\n"
+                f"Candidate Response: {candidate.response}\n\n"
+                "Rate the Candidate on scale 0.0 to 1.0 for: Primary Intent, Tone, Constraints.\n"
+                "Also provide a short constructive hint for the Architect to improve the prompt. "
+                "Do NOT leak the content of the Baseline response in the hint."
+            )
 
-            candidate.primary_intent_score = data.get("primary_intent_score", 0.0)
-            candidate.tone_voice_score = data.get("tone_voice_score", 0.0)
-            # Convert array of {constraint, score} into a dict for internal use
-            raw_constraints = data.get("constraint_scores", []) or []
-            constraint_scores = {}
-            for item in raw_constraints:
-                constraint = item.get("constraint")
-                score = item.get("score")
-                if constraint is not None and score is not None:
-                    constraint_scores[str(constraint)] = float(score)
-            candidate.constraint_scores = constraint_scores
-            candidate.feedback = data.get("feedback_hint", "")
+            schema = {
+                "type": "object",
+                "properties": {
+                    "primary_intent_score": {"type": "number"},
+                    "tone_voice_score": {"type": "number"},
+                    "constraint_scores": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "constraint": {"type": "string"},
+                                "score": {"type": "number"},
+                            },
+                            "required": ["constraint", "score"],
+                        },
+                    },
+                    "feedback_hint": {"type": "string"},
+                },
+                "required": [
+                    "primary_intent_score",
+                    "tone_voice_score",
+                    "constraint_scores",
+                    "feedback_hint",
+                ],
+            }
 
-            # We return 0.0 because the *Pipeline* will calculate the final score using the Strategy
-            return 0.0
+            try:
+                response_text = await provider.generate(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    model_name=self.model_name,
+                    config={"temperature": 0.0},
+                    response_schema=schema,
+                )
 
-        except json.JSONDecodeError as e:
-            logger.error("Judge received invalid JSON", error=str(e))
-            raise EvaluationError("Judge returned invalid JSON") from e
-        except Exception as e:
-            logger.error("Judge failed", error=str(e))
-            return 0.0
+                data = json.loads(response_text)
+                logger.debug("Judge scores", scores=data)
+
+                candidate.primary_intent_score = data.get("primary_intent_score", 0.0)
+                candidate.tone_voice_score = data.get("tone_voice_score", 0.0)
+                # Convert array of {constraint, score} into a dict for internal use
+                raw_constraints = data.get("constraint_scores", []) or []
+                constraint_scores = {}
+                for item in raw_constraints:
+                    constraint = item.get("constraint")
+                    score = item.get("score")
+                    if constraint is not None and score is not None:
+                        constraint_scores[str(constraint)] = float(score)
+                candidate.constraint_scores = constraint_scores
+                candidate.feedback = data.get("feedback_hint", "")
+
+                # We return 0.0 because the *Pipeline* will calculate the final score
+                # using the Strategy
+                return 0.0
+
+            except json.JSONDecodeError as e:
+                logger.error("Judge received invalid JSON", error=str(e))
+                raise EvaluationError("Judge returned invalid JSON") from e
+            except Exception as e:
+                logger.error("Judge failed", error=str(e))
+                return 0.0
