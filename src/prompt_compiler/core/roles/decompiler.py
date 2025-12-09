@@ -4,6 +4,7 @@ from attrs import define
 
 from prompt_compiler.core.exceptions import DecompilationError
 from prompt_compiler.core.interfaces import IDecompiler
+from prompt_compiler.core.roles.base import BaseRole
 from prompt_compiler.dto.models import (
     IntermediateRepresentation,
     IntermediateRepresentationData,
@@ -20,7 +21,7 @@ logger = get_logger(__name__)
 
 
 @define
-class GeminiDecompiler(IDecompiler):
+class GeminiDecompiler(IDecompiler, BaseRole):
     """
     Decompiler implementation using an LLM.
 
@@ -30,6 +31,10 @@ class GeminiDecompiler(IDecompiler):
 
     provider_name: str = "gemini"
     model_name: str = "gemini-2.5-pro"
+
+    @property
+    def role_name(self) -> str:
+        return "decompiler"
 
     def _get_system_prompt(self) -> str:
         return """
@@ -62,7 +67,6 @@ class GeminiDecompiler(IDecompiler):
             // Note: For Type B requests, the "variables" array should be kept empty.
         """
 
-    @telemetry.instrument(name="decompiler.decompile")
     async def decompile(
         self,
         original_prompt: OriginalPrompt,
@@ -71,84 +75,95 @@ class GeminiDecompiler(IDecompiler):
         """
         Decompile a raw prompt into a structured specification.
         """
-        logger.info(
-            "Decompiler starting analysis",
-            decompiler_model=self.model_name,
-        )
+        attributes = self._get_base_attributes()
+        attributes["prompt_compiler.source_model"] = original_prompt.model.model_name
 
-        provider = get_llm_provider(self.provider_name)
+        with telemetry.span(f"{self.role_name}.decompile", attributes=attributes):
+            logger.info(
+                "Decompiler starting analysis",
+                decompiler_model=self.model_name,
+            )
 
-        system_prompt = self._get_system_prompt()
+            provider = get_llm_provider(self.provider_name)
 
-        ir_schema = {
-            "type": "object",
-            "properties": {
-                "primary_intent": {"type": "string"},
-                "tone_voice": {"type": "string"},
-                "domain_context": {"type": "string"},
-                "constraints": {"type": "array", "items": {"type": "string"}},
-                "input_format": {"type": "string"},
-                "output_schema": {"type": "string"},
-                "few_shot_examples": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "input": {"type": "string"},
-                            "output": {"type": "string"},
+            system_prompt = self._get_system_prompt()
+
+            ir_schema = {
+                "type": "object",
+                "properties": {
+                    "primary_intent": {"type": "string"},
+                    "tone_voice": {"type": "string"},
+                    "domain_context": {"type": "string"},
+                    "constraints": {"type": "array", "items": {"type": "string"}},
+                    "input_format": {"type": "string"},
+                    "output_schema": {"type": "string"},
+                    "few_shot_examples": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "input": {"type": "string"},
+                                "output": {"type": "string"},
+                            },
+                            "required": ["input", "output"],
                         },
-                        "required": ["input", "output"],
                     },
                 },
-            },
-            "required": [
-                "primary_intent",
-                "tone_voice",
-                "domain_context",
-                "constraints",
-                "input_format",
-                "output_schema",
-                "few_shot_examples",
-            ],
-        }
+                "required": [
+                    "primary_intent",
+                    "tone_voice",
+                    "domain_context",
+                    "constraints",
+                    "input_format",
+                    "output_schema",
+                    "few_shot_examples",
+                ],
+            }
 
-        try:
-            response_text = await provider.generate(
-                system_prompt=system_prompt,
-                user_prompt=(
-                    f"Analyze this prompt and extract the specification:\n\n"
-                    f"{original_prompt.prompt}"
-                ),
-                model_name=self.model_name,
-                config={"temperature": 0.0},
-                response_schema=ir_schema,
-            )
+            try:
+                response_text = await provider.generate(
+                    system_prompt=system_prompt,
+                    user_prompt=(
+                        f"Analyze this prompt and extract the specification:\n\n"
+                        f"{original_prompt.prompt}"
+                    ),
+                    model_name=self.model_name,
+                    config={"temperature": 0.0},
+                    response_schema=ir_schema,
+                )
 
-            data = json.loads(response_text)
-            logger.debug("Decompiler IR extracted", data=data)
+                data = json.loads(response_text)
+                logger.debug("Decompiler extracted IR", data=data)
 
-            spec = IntermediateRepresentationSpec(
-                primary_intent=data["primary_intent"],
-                tone_voice=data["tone_voice"],
-                domain_context=data["domain_context"],
-                constraints=data["constraints"],
-                input_format=data["input_format"],
-                output_schema=data["output_schema"],
-            )
+                spec = IntermediateRepresentationSpec(
+                    primary_intent=data["primary_intent"],
+                    tone_voice=data["tone_voice"],
+                    domain_context=data["domain_context"],
+                    constraints=data["constraints"],
+                    input_format=data["input_format"],
+                    output_schema=data["output_schema"],
+                )
 
-            ir_data = IntermediateRepresentationData(
-                few_shot_examples=data.get("few_shot_examples", [])
-            )
+                ir_data = IntermediateRepresentationData(
+                    few_shot_examples=data.get("few_shot_examples", [])
+                )
 
-            meta = IntermediateRepresentationMeta(
-                source_model=original_prompt.model, target_model=target_model
-            )
+                meta = IntermediateRepresentationMeta(
+                    source_model=original_prompt.model, target_model=target_model
+                )
 
-            return IntermediateRepresentation(meta=meta, spec=spec, data=ir_data)
+                # Metric: Success
+                counter = telemetry.get_counter(
+                    "decompiler.intent_extraction_success",
+                    description="Count of successful IR extractions",
+                )
+                counter.add(1, attributes)
 
-        except json.JSONDecodeError as e:
-            logger.error("Decompiler received invalid JSON", error=str(e))
-            raise DecompilationError("Decompiler output was not valid JSON") from e
-        except Exception as e:
-            logger.error("Decompiler failed", error=str(e))
-            raise DecompilationError("Decompiler failed during generation") from e
+                return IntermediateRepresentation(meta=meta, spec=spec, data=ir_data)
+
+            except json.JSONDecodeError as e:
+                logger.error("Decompiler received invalid JSON", error=str(e))
+                raise DecompilationError("Decompiler output was not valid JSON") from e
+            except Exception as e:
+                logger.error("Decompiler failed", error=str(e))
+                raise DecompilationError("Decompiler failed during generation") from e

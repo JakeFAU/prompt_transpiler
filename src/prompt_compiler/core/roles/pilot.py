@@ -1,6 +1,7 @@
 from attrs import define
 
 from prompt_compiler.core.interfaces import IPilot
+from prompt_compiler.core.roles.base import BaseRole
 from prompt_compiler.llm.factory import get_llm_provider
 from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt
 from prompt_compiler.utils.logging import get_logger
@@ -10,34 +11,42 @@ logger = get_logger(__name__)
 
 
 @define
-class DefaultPilot(IPilot):
+class DefaultPilot(IPilot, BaseRole):
     """
     Standard Pilot implementation.
 
     The Pilot's role is to "test fly" the new Candidate Prompt.
     """
 
-    @telemetry.instrument(name="pilot.test_candidate")
+    @property
+    def role_name(self) -> str:
+        return "pilot"
+
     async def test_candidate(self, candidate: CandidatePrompt) -> CandidatePrompt:
         """
         Execute the candidate prompt against the target model.
         """
-        logger.info("Pilot testing candidate", model=candidate.model.model_name)
+        attributes = self._get_base_attributes()
+        attributes["prompt_compiler.pilot.max_retries"] = 0  # Default implementation has no retries
+        attributes["prompt_compiler.pilot.temperature"] = 0.0
 
-        provider = get_llm_provider(candidate.model.provider.provider)
+        with telemetry.span(f"{self.role_name}.test_candidate", attributes=attributes):
+            logger.info("Pilot testing candidate", model=candidate.model.model_name)
 
-        try:
-            response = await provider.generate(
-                system_prompt="You are a helpful assistant.",
-                user_prompt=candidate.prompt,
-                model_name=candidate.model.model_name,
-                config={"temperature": 0.0},
-            )
-            candidate.response = response
-            logger.info("Pilot test complete", response_length=len(response))
+            provider = get_llm_provider(candidate.model.provider.provider)
 
-        except Exception as e:
-            logger.error("Pilot failed", error=str(e))
-            candidate.response = f"ERROR: Execution failed. {e!s}"
+            try:
+                response = await provider.generate(
+                    system_prompt="You are a helpful assistant.",
+                    user_prompt=candidate.prompt,
+                    model_name=candidate.model.model_name,
+                    config={"temperature": 0.0},
+                )
+                candidate.response = response
+                logger.info("Pilot test complete", response_length=len(response))
 
-        return candidate
+            except Exception as e:
+                logger.error("Pilot failed", error=str(e))
+                candidate.response = f"ERROR: Execution failed. {e!s}"
+
+            return candidate

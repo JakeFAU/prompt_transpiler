@@ -97,6 +97,11 @@ class PromptCompilerPipeline:
             "compiler.pipeline.retries", "Number of optimization retries"
         )
 
+        # Inject strategy into Judge if supported (for Telemetry)
+        if isinstance(self.judge, LLMAdjudicator):
+            self.judge.scoring_algorithm = self.scoring_algorithm
+            self.judge.score_threshold = self.score_threshold
+
     @telemetry.instrument(name="pipeline.compile")
     async def run(  # noqa: PLR0915, PLR0913
         self,
