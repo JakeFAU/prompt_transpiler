@@ -1,10 +1,14 @@
 prompt\_compiler.dto package
 ============================
 
-Module contents
----------------
+Submodules
+----------
 
-.. automodule:: prompt_compiler.dto
+prompt\_compiler.dto.models module
+----------------------------------
+
+.. automodule:: prompt_compiler.dto.models
    :members:
    :show-inheritance:
    :undoc-members:
+   :no-index:
