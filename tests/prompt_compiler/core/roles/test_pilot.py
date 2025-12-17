@@ -3,7 +3,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from prompt_compiler.core.roles.pilot import DefaultPilot
-from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.dto.models import (
+    LLMResponse,
+    Model,
+    ModelProviderType,
+    PromptStyle,
+    Provider,
+    TokenUsage,
+)
 from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt
 
 
@@ -24,7 +31,9 @@ def mock_model():
 async def test_pilot_success(mock_model):
     with patch("prompt_compiler.core.roles.pilot.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate.return_value = "Candidate Response"
+        mock_provider.generate.return_value = LLMResponse(
+            content="Candidate Response", model_name="gpt-4", usage=TokenUsage(total_tokens=100)
+        )
         mock_get_provider.return_value = mock_provider
 
         pilot = DefaultPilot()

@@ -5,7 +5,14 @@ import pytest
 
 from prompt_compiler.core.exceptions import EvaluationError
 from prompt_compiler.core.scoring import LLMAdjudicator, WeightedScoreAlgorithm
-from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.dto.models import (
+    LLMResponse,
+    Model,
+    ModelProviderType,
+    PromptStyle,
+    Provider,
+    TokenUsage,
+)
 from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
 
 # Test constants
@@ -54,7 +61,11 @@ async def test_llm_adjudicator_success(mock_model):
             "constraint_scores": [{"constraint": "c1", "score": 1.0}],
             "feedback_hint": "Good job",
         }
-        mock_provider.generate.return_value = json.dumps(response_data)
+        mock_provider.generate.return_value = LLMResponse(
+            content=json.dumps(response_data),
+            model_name="gpt-4o",
+            usage=TokenUsage(total_tokens=100),
+        )
         mock_get_provider.return_value = mock_provider
 
         judge = LLMAdjudicator()
@@ -75,7 +86,9 @@ async def test_llm_adjudicator_success(mock_model):
 async def test_llm_adjudicator_invalid_json(mock_model):
     with patch("prompt_compiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate.return_value = "Not JSON"
+        mock_provider.generate.return_value = LLMResponse(
+            content="Not JSON", model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
         mock_get_provider.return_value = mock_provider
 
         judge = LLMAdjudicator()

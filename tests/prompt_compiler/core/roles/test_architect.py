@@ -9,10 +9,12 @@ from prompt_compiler.dto.models import (
     IntermediateRepresentationData,
     IntermediateRepresentationMeta,
     IntermediateRepresentationSpec,
+    LLMResponse,
     Model,
     ModelProviderType,
     PromptStyle,
     Provider,
+    TokenUsage,
 )
 
 
@@ -49,7 +51,9 @@ def mock_ir(mock_model):
 async def test_architect_design_prompt_success(mock_ir, mock_model):
     with patch("prompt_compiler.core.roles.architect.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate.return_value = "Optimized Prompt"
+        mock_provider.generate.return_value = LLMResponse(
+            content="Optimized Prompt", model_name="gpt-4-turbo", usage=TokenUsage(total_tokens=100)
+        )
         mock_get_provider.return_value = mock_provider
 
         architect = GPTArchitect()
@@ -64,7 +68,9 @@ async def test_architect_design_prompt_success(mock_ir, mock_model):
 async def test_architect_design_prompt_with_feedback(mock_ir, mock_model):
     with patch("prompt_compiler.core.roles.architect.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate.return_value = "Optimized Prompt"
+        mock_provider.generate.return_value = LLMResponse(
+            content="Optimized Prompt", model_name="gpt-4-turbo", usage=TokenUsage(total_tokens=100)
+        )
         mock_get_provider.return_value = mock_provider
 
         architect = GPTArchitect()

@@ -11,6 +11,7 @@ from google import genai
 from google.genai import types
 
 from prompt_compiler.config import settings
+from prompt_compiler.dto.models import LLMResponse, TokenUsage
 from prompt_compiler.utils.logging import get_logger
 
 from .base import LLMProvider
@@ -39,7 +40,7 @@ class GeminiAdapter(LLMProvider):
         config: dict[str, Any],
         response_schema: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> LLMResponse:
         """
         Generates a response from a Gemini model.
 
@@ -52,7 +53,7 @@ class GeminiAdapter(LLMProvider):
             **kwargs: Additional arguments passed to the Gemini API.
 
         Returns:
-            str: The generated content.
+            LLMResponse: The generated content and usage stats.
         """
         logger.info("Generating response", provider="gemini", model=model_name)
 
@@ -87,7 +88,19 @@ class GeminiAdapter(LLMProvider):
             usage=response.usage_metadata.model_dump() if response.usage_metadata else None,
         )
 
-        return response.text or ""
+        usage_data = response.usage_metadata
+        usage = TokenUsage(
+            prompt_tokens=(usage_data.prompt_token_count or 0) if usage_data else 0,
+            completion_tokens=(usage_data.candidates_token_count or 0) if usage_data else 0,
+            total_tokens=(usage_data.total_token_count or 0) if usage_data else 0,
+        )
+
+        return LLMResponse(
+            content=response.text or "",
+            model_name=model_name,
+            usage=usage,
+            raw_response=response,
+        )
 
     async def available_models(self) -> list[str]:
         """Fetches available Gemini models."""

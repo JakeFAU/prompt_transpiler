@@ -27,7 +27,12 @@ async def test_generate_simple(mock_gemini):
     # Mock the response object
     mock_response = MagicMock()
     mock_response.text = "Gemini Response"
-    mock_response.usage_metadata.model_dump.return_value = {"total_tokens": 10}
+    mock_response.usage_metadata = MagicMock(
+        prompt_token_count=10,
+        candidates_token_count=5,
+        total_token_count=15,
+        model_dump=lambda: {"total_token_count": 15},
+    )
 
     # Mock the async generate_content method
     mock_client_instance.aio.models.generate_content = AsyncMock(return_value=mock_response)
@@ -40,7 +45,7 @@ async def test_generate_simple(mock_gemini):
         config={"max_tokens": 100},
     )
 
-    assert response == "Gemini Response"
+    assert response.content == "Gemini Response"
     mock_client_instance.aio.models.generate_content.assert_called_once()
 
     call_kwargs = mock_client_instance.aio.models.generate_content.call_args.kwargs
@@ -60,10 +65,22 @@ async def test_generate_with_schema(mock_gemini):
 
     mock_response = MagicMock()
     mock_response.text = "{}"
+    mock_response.usage_metadata = MagicMock(
+        prompt_token_count=10,
+        candidates_token_count=5,
+        total_token_count=15,
+        model_dump=lambda: {"total_token_count": 15},
+    )
     mock_client_instance.aio.models.generate_content = AsyncMock(return_value=mock_response)
 
     adapter = GeminiAdapter()
-    response_schema = {"type": "object", "properties": {"foo": {"type": "string"}}}
+    response_schema = {
+        "type": "object",
+        "properties": {
+            "foo": {"type": "string"},
+            "nested": {"type": "object", "properties": {"bar": {"type": "number"}}},
+        },
+    }
 
     await adapter.generate(
         system_prompt="System",

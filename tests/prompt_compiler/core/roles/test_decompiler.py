@@ -5,7 +5,14 @@ import pytest
 
 from prompt_compiler.core.exceptions import DecompilationError
 from prompt_compiler.core.roles.decompiler import GeminiDecompiler
-from prompt_compiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_compiler.dto.models import (
+    LLMResponse,
+    Model,
+    ModelProviderType,
+    PromptStyle,
+    Provider,
+    TokenUsage,
+)
 from prompt_compiler.llm.prompts.prompt_objects import OriginalPrompt
 
 
@@ -40,7 +47,11 @@ async def test_decompiler_success(mock_original_prompt, mock_model):
             "output_schema": "text",
             "few_shot_examples": [{"input": "i", "output": "o"}],
         }
-        mock_provider.generate.return_value = json.dumps(response_data)
+        mock_provider.generate.return_value = LLMResponse(
+            content=json.dumps(response_data),
+            model_name="gemini-2.5-pro",
+            usage=TokenUsage(total_tokens=100),
+        )
         mock_get_provider.return_value = mock_provider
 
         decompiler = GeminiDecompiler()
@@ -55,7 +66,9 @@ async def test_decompiler_success(mock_original_prompt, mock_model):
 async def test_decompiler_invalid_json(mock_original_prompt, mock_model):
     with patch("prompt_compiler.core.roles.decompiler.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
-        mock_provider.generate.return_value = "Not JSON"
+        mock_provider.generate.return_value = LLMResponse(
+            content="Not JSON", model_name="gemini-2.5-pro", usage=TokenUsage(total_tokens=100)
+        )
         mock_get_provider.return_value = mock_provider
 
         decompiler = GeminiDecompiler()
