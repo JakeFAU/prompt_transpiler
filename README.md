@@ -103,6 +103,9 @@ prompt-compiler "Extract the stock tickers from this text and give me JSON." \
     --source gpt-4o-mini \
     --target gemini-2.5-flash
 
+# The CLI will also print a semantic explanation of how the compiled prompt differs
+# from the original (diff agent). Disable with --quiet if you only want the prompt.
+
 # Compile from a file
 prompt-compiler ./my_prompt.txt -s gpt-4o -t gemini-2.5-pro
 

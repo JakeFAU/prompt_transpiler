@@ -80,6 +80,11 @@ class CandidatePrompt:
         default=None, validator=validators.optional(validators.instance_of(str))
     )
 
+    # Semantic explanation of how this prompt differs from the original
+    diff_summary: str | None = field(
+        default=None, validator=validators.optional(validators.instance_of(str))
+    )
+
     # Internal Cache State (Not exposed in __init__)
     _cached_score: float | None = field(init=False, default=None)
     _cached_algo_id: int | None = field(init=False, default=None)

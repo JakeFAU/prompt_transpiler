@@ -30,7 +30,20 @@ class HuggingFaceAdapter(LLMProvider):
 
     def __init__(self) -> None:
         logger.debug("Initializing HuggingFaceAdapter")
-        self._client = AsyncInferenceClient(token=settings.HUGGINGFACE_API_KEY)
+        api_key = settings.get("HUGGINGFACE_API_KEY")
+
+        if not api_key:
+            logger.warning(
+                "HUGGINGFACE_API_KEY not set. "
+                "Add it to .secrets.toml or set PRCOMP_HUGGINGFACE_API_KEY env var."
+            )
+        elif not api_key.startswith("hf_"):
+            logger.warning(
+                "HUGGINGFACE_API_KEY does not appear to be a valid HuggingFace token "
+                "(should start with 'hf_'). Inference API calls may fail."
+            )
+
+        self._client = AsyncInferenceClient(token=api_key)
 
     async def generate(
         self,
@@ -61,7 +74,7 @@ class HuggingFaceAdapter(LLMProvider):
         params = {
             "model": model_name,
             "temperature": settings.HUGGINGFACE.TEMPERATURE,
-            "max_tokens": 1024,  # Default max tokens
+            "max_tokens": settings.HUGGINGFACE.get("MAX_TOKENS", 4096),
             **config,
             **kwargs,
         }
@@ -93,7 +106,7 @@ class HuggingFaceAdapter(LLMProvider):
 
         logger.debug(
             "Hugging Face generation complete",
-            usage=response.usage.model_dump() if response.usage else None,
+            usage=vars(response.usage) if response.usage else None,
         )
 
         usage_data = response.usage

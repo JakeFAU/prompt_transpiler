@@ -29,10 +29,12 @@ class ModelRegistry:
     """
 
     _models: dict[str, Model] = field(factory=dict)
+    _aliases: dict[str, str] = field(factory=dict)
 
     def __attrs_post_init__(self) -> None:
         """Initialize the registry with default models on construction."""
         self._register_default_models()
+        self._register_huggingface_aliases()
 
     def _register_default_models(self) -> None:
         """
@@ -269,6 +271,323 @@ class ModelRegistry:
             }
         )
 
+        # Hugging Face Models (popular models available via Inference API)
+        # Meta Llama models
+        self.register_model_from_dict(
+            {
+                "model_name": "meta-llama/Llama-3.3-70B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and direct. Use structured formatting.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "meta-llama/Llama-3.2-3B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and direct. Use structured formatting.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "meta-llama/Llama-3.2-1B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and direct. Use structured formatting.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and direct. Use structured formatting.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "meta-llama/Llama-3.1-70B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and direct. Use structured formatting.",
+            }
+        )
+
+        # Mistral models
+        self.register_model_from_dict(
+            {
+                "model_name": "mistralai/Mistral-7B-Instruct-v0.3",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 32768,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Use clear instructions. Responds well to structure.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 32768,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Use clear instructions. Excels at complex reasoning.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "mistralai/Mistral-Nemo-Instruct-2407",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Use clear instructions. Good for multilingual tasks.",
+            }
+        )
+
+        # Microsoft Phi models
+        self.register_model_from_dict(
+            {
+                "model_name": "microsoft/Phi-3.5-mini-instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 128000,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be concise. Phi excels at reasoning and code tasks.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "microsoft/Phi-4",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 16384,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be concise. Phi-4 excels at reasoning, math, and coding.",
+            }
+        )
+
+        # Qwen models
+        self.register_model_from_dict(
+            {
+                "model_name": "Qwen/Qwen2.5-72B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 131072,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and structured. Handles complex instructions.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "Qwen/Qwen2.5-7B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 131072,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be clear and structured. Handles complex instructions.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "Qwen/Qwen2.5-Coder-32B-Instruct",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 131072,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Specialized for coding tasks. Provide clear code context.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "Qwen/QwQ-32B",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 131072,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Reasoning-focused model. Good for step-by-step problem solving.",
+            }
+        )
+
+        # DeepSeek models
+        self.register_model_from_dict(
+            {
+                "model_name": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 131072,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Strong reasoning model. Good for complex analytical tasks.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 131072,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Strong reasoning model. Good for complex analytical tasks.",
+            }
+        )
+
+        # Google Gemma models
+        self.register_model_from_dict(
+            {
+                "model_name": "google/gemma-2-27b-it",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 8192,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be concise. Gemma works well with clear, direct instructions.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "google/gemma-2-9b-it",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 8192,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be concise. Gemma works well with clear, direct instructions.",
+            }
+        )
+        self.register_model_from_dict(
+            {
+                "model_name": "google/gemma-2-2b-it",
+                "provider": {
+                    "provider": "huggingface",
+                    "provider_type": "huggingface",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 8192,
+                "prompt_style": "markdown",
+                "supports_json_mode": False,
+                "prompting_tips": "Be concise. Lightweight model for simple tasks.",
+            }
+        )
+
+    def _register_huggingface_aliases(self) -> None:
+        """
+        Register short-name aliases for HuggingFace models.
+
+        This allows users to specify just the model name (e.g., 'Llama-3.3-70B-Instruct')
+        instead of the full HuggingFace model ID (e.g., 'meta-llama/Llama-3.3-70B-Instruct').
+        """
+        # Map short names to full HuggingFace model IDs
+        hf_aliases = {
+            # Meta Llama
+            "Llama-3.3-70B-Instruct": "meta-llama/Llama-3.3-70B-Instruct",
+            "Llama-3.2-3B-Instruct": "meta-llama/Llama-3.2-3B-Instruct",
+            "Llama-3.2-1B-Instruct": "meta-llama/Llama-3.2-1B-Instruct",
+            "Llama-3.1-8B-Instruct": "meta-llama/Llama-3.1-8B-Instruct",
+            "Llama-3.1-70B-Instruct": "meta-llama/Llama-3.1-70B-Instruct",
+            # Mistral
+            "Mistral-7B-Instruct-v0.3": "mistralai/Mistral-7B-Instruct-v0.3",
+            "Mixtral-8x7B-Instruct-v0.1": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "Mistral-Nemo-Instruct-2407": "mistralai/Mistral-Nemo-Instruct-2407",
+            # Microsoft Phi
+            "Phi-3.5-mini-instruct": "microsoft/Phi-3.5-mini-instruct",
+            "Phi-4": "microsoft/Phi-4",
+            # Qwen
+            "Qwen2.5-72B-Instruct": "Qwen/Qwen2.5-72B-Instruct",
+            "Qwen2.5-7B-Instruct": "Qwen/Qwen2.5-7B-Instruct",
+            "Qwen2.5-Coder-32B-Instruct": "Qwen/Qwen2.5-Coder-32B-Instruct",
+            "QwQ-32B": "Qwen/QwQ-32B",
+            # DeepSeek
+            "DeepSeek-R1-Distill-Qwen-32B": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+            "DeepSeek-R1-Distill-Llama-70B": "deepseek-ai/DeepSeek-R1-Distill-Llama-70B",
+            # Google Gemma
+            "gemma-2-27b-it": "google/gemma-2-27b-it",
+            "gemma-2-9b-it": "google/gemma-2-9b-it",
+            "gemma-2-2b-it": "google/gemma-2-2b-it",
+        }
+        self._aliases.update(hf_aliases)
+        logger.debug("Registered %d HuggingFace model aliases", len(hf_aliases))
+
     def register_model(self, model: Model) -> None:
         """
         Register a fully constructed `Model` instance.
@@ -343,8 +662,19 @@ class ModelRegistry:
             The matching `Model` from the registry, or a temporary definition
             synthesized with conservative defaults when the name is unknown.
         """
+        # Direct lookup
         if model_name in self._models:
             return self._models[model_name]
+
+        # Check if it's an alias (e.g., short name for HuggingFace models)
+        if model_name in self._aliases:
+            canonical_name = self._aliases[model_name]
+            logger.debug(
+                "Resolved alias '%s' to canonical model '%s'",
+                model_name,
+                canonical_name,
+            )
+            return self._models[canonical_name]
 
         # Soft matching or fallback logic can go here.
         # For now, let's try to handle the case where user provides "gpt-4" but we

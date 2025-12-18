@@ -69,6 +69,7 @@ def test_candidate_prompt_creation(mock_model):
     assert cp.prompt == "Hello optimized"
     assert cp.model == mock_model
     assert cp.primary_intent_score is None
+    assert cp.diff_summary is None
     assert cp._cached_score is None
 
 
