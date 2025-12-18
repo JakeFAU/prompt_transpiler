@@ -10,6 +10,7 @@ from prompt_compiler.llm.factory import get_llm_provider
 from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt
 from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.telemetry import telemetry
+from prompt_compiler.utils.token_collector import token_collector
 
 logger = get_logger(__name__)
 
@@ -99,12 +100,16 @@ class GPTArchitect(IArchitect, BaseRole):
             )
 
             try:
-                response_text = await provider.generate(
+                llm_response = await provider.generate(
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
                     model_name=self.model_name,
                     config={"temperature": 0.7},
                 )
+                # Collect tokens
+                token_collector.add(self.model_name, llm_response.usage)
+
+                response_text = llm_response.content
                 logger.debug("Architect generated prompt", length=len(response_text))
 
                 if span:

@@ -11,6 +11,7 @@ import click
 from prompt_compiler.config import settings
 from prompt_compiler.core.pipeline import compile_pipeline
 from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.token_collector import token_collector
 
 
 def _get_version() -> str:
@@ -275,6 +276,19 @@ def main(  # noqa: PLR0913
                 score_threshold=score_threshold,
                 scoring_algo=scoring_algo,
             )
+
+            if not quiet:
+                summary = token_collector.get_summary()
+                click.echo("\n--- Token Usage Summary ---")
+                total_cost_tokens = 0
+                for model, usage in summary.items():
+                    click.echo(f"Model: {model}")
+                    click.echo(f"  Prompt Tokens:     {usage.prompt_tokens}")
+                    click.echo(f"  Completion Tokens: {usage.completion_tokens}")
+                    click.echo(f"  Total Tokens:      {usage.total_tokens}")
+                    total_cost_tokens += usage.total_tokens
+                click.echo(f"Grand Total Tokens:  {total_cost_tokens}")
+                click.echo("---------------------------\n")
 
             # 5. Handle Output
             if output:

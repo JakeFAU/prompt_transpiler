@@ -6,6 +6,7 @@ from prompt_compiler.llm.factory import get_llm_provider
 from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt
 from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.telemetry import telemetry
+from prompt_compiler.utils.token_collector import token_collector
 
 logger = get_logger(__name__)
 
@@ -36,12 +37,16 @@ class DefaultPilot(IPilot, BaseRole):
             provider = get_llm_provider(candidate.model.provider.provider)
 
             try:
-                response = await provider.generate(
+                llm_response = await provider.generate(
                     system_prompt="You are a helpful assistant.",
                     user_prompt=candidate.prompt,
                     model_name=candidate.model.model_name,
                     config={"temperature": 0.0},
                 )
+                # Collect tokens
+                token_collector.add(candidate.model.model_name, llm_response.usage)
+
+                response = llm_response.content
                 candidate.response = response
                 logger.info("Pilot test complete", response_length=len(response))
 

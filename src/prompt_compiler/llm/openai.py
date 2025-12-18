@@ -12,6 +12,7 @@ import openai
 from openai.types.chat.chat_completion import ChatCompletion
 
 from prompt_compiler.config import settings
+from prompt_compiler.dto.models import LLMResponse, TokenUsage
 from prompt_compiler.utils.logging import get_logger
 
 from .base import LLMProvider
@@ -80,7 +81,7 @@ class OpenAIAdapter(LLMProvider):
         config: dict[str, Any],
         response_schema: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> LLMResponse:
         """
         Generates a response from an OpenAI model.
 
@@ -93,7 +94,7 @@ class OpenAIAdapter(LLMProvider):
             **kwargs: Additional arguments passed to the OpenAI API.
 
         Returns:
-            str: The generated content.
+            LLMResponse: The generated content and usage stats.
         """
         logger.info("Generating response", provider="openai", model=model_name)
 
@@ -133,7 +134,19 @@ class OpenAIAdapter(LLMProvider):
             usage=response.usage.model_dump() if response.usage else None,
         )
 
-        return response.choices[0].message.content or ""
+        usage_data = response.usage
+        usage = TokenUsage(
+            prompt_tokens=usage_data.prompt_tokens if usage_data else 0,
+            completion_tokens=usage_data.completion_tokens if usage_data else 0,
+            total_tokens=usage_data.total_tokens if usage_data else 0,
+        )
+
+        return LLMResponse(
+            content=response.choices[0].message.content or "",
+            model_name=model_name,
+            usage=usage,
+            raw_response=response,
+        )
 
     async def available_models(self) -> list[str]:
         """Fetches available GPT models (filtering out audio/image models)."""

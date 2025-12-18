@@ -16,6 +16,7 @@ from prompt_compiler.llm.factory import get_llm_provider
 from prompt_compiler.llm.prompts.prompt_objects import OriginalPrompt
 from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.telemetry import telemetry
+from prompt_compiler.utils.token_collector import token_collector
 
 logger = get_logger(__name__)
 
@@ -121,7 +122,7 @@ class GeminiDecompiler(IDecompiler, BaseRole):
             }
 
             try:
-                response_text = await provider.generate(
+                llm_response = await provider.generate(
                     system_prompt=system_prompt,
                     user_prompt=(
                         f"Analyze this prompt and extract the specification:\n\n"
@@ -132,6 +133,10 @@ class GeminiDecompiler(IDecompiler, BaseRole):
                     response_schema=ir_schema,
                 )
 
+                # Collect tokens
+                token_collector.add(self.model_name, llm_response.usage)
+
+                response_text = llm_response.content
                 data = json.loads(response_text)
                 logger.debug("Decompiler extracted IR", data=data)
 

@@ -11,6 +11,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from prompt_compiler.config import settings
+from prompt_compiler.dto.models import LLMResponse, TokenUsage
 from prompt_compiler.utils.logging import get_logger
 
 from .base import LLMProvider
@@ -39,7 +40,7 @@ class AnthropicAdapter(LLMProvider):
         config: dict[str, Any],
         response_schema: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> LLMResponse:
         """
         Generates a response from an Anthropic model.
 
@@ -52,7 +53,7 @@ class AnthropicAdapter(LLMProvider):
             **kwargs: Additional arguments passed to the Anthropic API.
 
         Returns:
-            str: The generated content.
+            LLMResponse: The generated content and usage stats.
         """
         logger.info("Generating response", provider="anthropic", model=model_name)
 
@@ -103,7 +104,19 @@ class AnthropicAdapter(LLMProvider):
                 if block.type == "text":
                     content += block.text
 
-        return content
+        usage_data = response.usage
+        usage = TokenUsage(
+            prompt_tokens=usage_data.input_tokens if usage_data else 0,
+            completion_tokens=usage_data.output_tokens if usage_data else 0,
+            total_tokens=(usage_data.input_tokens + usage_data.output_tokens) if usage_data else 0,
+        )
+
+        return LLMResponse(
+            content=content,
+            model_name=model_name,
+            usage=usage,
+            raw_response=response,
+        )
 
     async def available_models(self) -> list[str]:
         """Returns a hardcoded list of Anthropic models as the API doesn't support listing."""

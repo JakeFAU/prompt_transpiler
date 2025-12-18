@@ -6,6 +6,7 @@ from prompt_compiler.llm.factory import get_llm_provider
 from prompt_compiler.llm.prompts.prompt_objects import OriginalPrompt
 from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.telemetry import telemetry
+from prompt_compiler.utils.token_collector import token_collector
 
 logger = get_logger(__name__)
 
@@ -30,12 +31,16 @@ class DefaultHistorian(IHistorian):
 
         try:
             # We use a deterministic config for the baseline to be stable
-            response = await provider.generate(
+            llm_response = await provider.generate(
                 system_prompt="You are a helpful assistant.",
                 user_prompt=original_prompt.prompt,
                 model_name=original_prompt.model.model_name,
                 config={"temperature": 0.0},
             )
+            # Collect tokens
+            token_collector.add(original_prompt.model.model_name, llm_response.usage)
+
+            response = llm_response.content
             original_prompt.response = response
             logger.info("Historian baseline captured", response_length=len(response))
 

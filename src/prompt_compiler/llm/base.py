@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from prompt_compiler.config import settings
+from prompt_compiler.dto.models import LLMResponse
 
 
 class LLMProvider(ABC):
@@ -27,7 +28,7 @@ class LLMProvider(ABC):
         # Crucial for the Decompiler to enforce valid IR generation
         response_schema: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> str:
+    ) -> LLMResponse:
         """
         Standardized generation method.
 

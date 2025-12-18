@@ -29,7 +29,12 @@ async def test_generate_simple(mock_openai):
     # Setup the response structure
     mock_completion = MagicMock()
     mock_completion.choices = [MagicMock(message=MagicMock(content="Generated response"))]
-    mock_completion.usage = MagicMock(model_dump=lambda: {"total_tokens": 10})
+    mock_completion.usage = MagicMock(
+        prompt_tokens=10,
+        completion_tokens=5,
+        total_tokens=15,
+        model_dump=lambda: {"total_tokens": 15},
+    )
     mock_completion.id = "test-id"
 
     # Mock the async create method
@@ -40,7 +45,7 @@ async def test_generate_simple(mock_openai):
         system_prompt="System", user_prompt="User", model_name="gpt-4", config={"max_tokens": 100}
     )
 
-    assert response == "Generated response"
+    assert response.content == "Generated response"
     mock_client_instance.chat.completions.create.assert_called_once()
 
     call_kwargs = mock_client_instance.chat.completions.create.call_args.kwargs
@@ -59,6 +64,7 @@ async def test_generate_with_schema(mock_openai):
 
     mock_completion = MagicMock()
     mock_completion.choices = [MagicMock(message=MagicMock(content="{}"))]
+    mock_completion.usage = MagicMock(prompt_tokens=0, completion_tokens=0, total_tokens=0)
     mock_client_instance.chat.completions.create = AsyncMock(return_value=mock_completion)
 
     adapter = OpenAIAdapter()

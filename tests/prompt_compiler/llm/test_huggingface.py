@@ -33,6 +33,11 @@ async def test_generate_simple(mock_hf_client):
     mock_choice.message.content = "HF Response"
     mock_completion = MagicMock()
     mock_completion.choices = [mock_choice]
+
+    # Explicitly set integer values for usage
+    mock_completion.usage.prompt_tokens = 5
+    mock_completion.usage.completion_tokens = 5
+    mock_completion.usage.total_tokens = 10
     mock_completion.usage.model_dump.return_value = {"total_tokens": 10}
 
     mock_client_instance.chat_completion = AsyncMock(return_value=mock_completion)
@@ -45,7 +50,7 @@ async def test_generate_simple(mock_hf_client):
         config={"max_tokens": 100},
     )
 
-    assert response == "HF Response"
+    assert response.content == "HF Response"
     mock_client_instance.chat_completion.assert_called_once()
 
     call_kwargs = mock_client_instance.chat_completion.call_args.kwargs
@@ -64,6 +69,12 @@ async def test_generate_with_schema(mock_hf_client):
     mock_choice.message.content = "{}"
     mock_completion = MagicMock()
     mock_completion.choices = [mock_choice]
+
+    # Mock usage with integers
+    mock_completion.usage.prompt_tokens = 0
+    mock_completion.usage.completion_tokens = 0
+    mock_completion.usage.total_tokens = 0
+
     mock_client_instance.chat_completion = AsyncMock(return_value=mock_completion)
 
     adapter = HuggingFaceAdapter()

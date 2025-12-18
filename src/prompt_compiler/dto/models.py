@@ -330,3 +330,66 @@ class IntermediateRepresentationSchema(ma.Schema):
             IntermediateRepresentation: The constructed IR object.
         """
         return IntermediateRepresentation(**data)
+
+
+@define(kw_only=True)
+class TokenUsage:
+    """
+    Represents token usage statistics for an LLM response.
+
+    Attributes:
+        prompt_tokens (int): The number of tokens in the prompt.
+        completion_tokens (int): The number of tokens in the generated completion.
+        total_tokens (int): The total number of tokens used.
+    """
+
+    prompt_tokens: int = field(default=0, validator=validators.instance_of(int))
+    completion_tokens: int = field(default=0, validator=validators.instance_of(int))
+    total_tokens: int = field(default=0, validator=validators.instance_of(int))
+
+
+class TokenUsageSchema(ma.Schema):
+    """
+    Marshmallow schema for serializing and deserializing `TokenUsage` objects.
+    """
+
+    prompt_tokens = ma.fields.Int(dump_default=0)
+    completion_tokens = ma.fields.Int(dump_default=0)
+    total_tokens = ma.fields.Int(dump_default=0)
+
+    @ma.post_load
+    def make_token_usage(self, data: dict[str, Any], **kwargs: Any) -> TokenUsage:
+        return TokenUsage(**data)
+
+
+@define(kw_only=True)
+class LLMResponse:
+    """
+    Represents a response from an LLM.
+
+    Attributes:
+        content (str): The generated text content.
+        model_name (str): The name of the model that generated the response.
+        usage (TokenUsage): Token usage statistics.
+        raw_response (Any): The raw response object from the provider (optional).
+    """
+
+    content: str = field(validator=validators.instance_of(str))
+    model_name: str = field(validator=validators.instance_of(str))
+    usage: TokenUsage = field(factory=TokenUsage, validator=validators.instance_of(TokenUsage))
+    raw_response: Any = field(default=None)
+
+
+class LLMResponseSchema(ma.Schema):
+    """
+    Marshmallow schema for serializing and deserializing `LLMResponse` objects.
+    """
+
+    content = ma.fields.Str(required=True)
+    model_name = ma.fields.Str(required=True)
+    usage = ma.fields.Nested(TokenUsageSchema, dump_default=TokenUsage)
+    # raw_response is explicitly excluded from schema as it can be arbitrary
+
+    @ma.post_load
+    def make_llm_response(self, data: dict[str, Any], **kwargs: Any) -> LLMResponse:
+        return LLMResponse(**data)

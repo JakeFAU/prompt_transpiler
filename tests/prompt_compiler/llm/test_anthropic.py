@@ -27,7 +27,11 @@ async def test_generate_simple(mock_anthropic):
     mock_msg = MagicMock()
     mock_msg.id = "msg_123"
     mock_msg.content = [MagicMock(type="text", text="Anthropic Response")]
-    mock_msg.usage.model_dump.return_value = {"input_tokens": 10, "output_tokens": 5}
+    mock_msg.usage = MagicMock(
+        input_tokens=10,
+        output_tokens=5,
+        model_dump=lambda: {"input_tokens": 10, "output_tokens": 5},
+    )
 
     mock_client_instance.messages.create = AsyncMock(return_value=mock_msg)
 
@@ -39,7 +43,7 @@ async def test_generate_simple(mock_anthropic):
         config={"max_tokens": 100},
     )
 
-    assert response == "Anthropic Response"
+    assert response.content == "Anthropic Response"
     mock_client_instance.messages.create.assert_called_once()
 
     call_kwargs = mock_client_instance.messages.create.call_args.kwargs
@@ -55,6 +59,7 @@ async def test_generate_with_schema(mock_anthropic):
     mock_client_instance = mock_anthropic.return_value
     mock_msg = MagicMock()
     mock_msg.content = [MagicMock(type="text", text="{}")]
+    mock_msg.usage = MagicMock(input_tokens=0, output_tokens=0)
     mock_client_instance.messages.create = AsyncMock(return_value=mock_msg)
 
     adapter = AnthropicAdapter()
