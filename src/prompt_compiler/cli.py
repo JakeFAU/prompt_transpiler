@@ -10,6 +10,7 @@ import click
 
 from prompt_compiler.config import settings
 from prompt_compiler.core.pipeline import compile_pipeline
+from prompt_compiler.core.registry import ModelRegistry
 from prompt_compiler.utils.logging import get_logger
 from prompt_compiler.utils.token_collector import token_collector
 
@@ -34,6 +35,8 @@ def _update_role_settings(  # noqa: PLR0913
     architect_model: str | None,
     decompiler_provider: str | None,
     decompiler_model: str | None,
+    diff_provider: str | None,
+    diff_model: str | None,
     judge_provider: str | None,
     judge_model: str | None,
 ) -> None:
@@ -51,6 +54,11 @@ def _update_role_settings(  # noqa: PLR0913
         roles.setdefault("decompiler", {})["provider"] = decompiler_provider
     if decompiler_model:
         roles.setdefault("decompiler", {})["model"] = decompiler_model
+
+    if diff_provider:
+        roles.setdefault("diff", {})["provider"] = diff_provider
+    if diff_model:
+        roles.setdefault("diff", {})["model"] = diff_model
 
     if judge_provider:
         roles.setdefault("judge", {})["provider"] = judge_provider
@@ -122,15 +130,13 @@ def _configure_logging(verbose: int, quiet: bool) -> str:
 )
 @click.option(
     "--source-provider",
-    default="openai",
-    show_default=True,
-    help="Provider for source model.",
+    default=None,
+    help="Provider for source model (auto-detected from registry if not specified).",
 )
 @click.option(
     "--target-provider",
-    default="gemini",
-    show_default=True,
-    help="Provider for target model.",
+    default=None,
+    help="Provider for target model (auto-detected from registry if not specified).",
 )
 @click.option(
     "--max-retries",
@@ -161,6 +167,14 @@ def _configure_logging(verbose: int, quiet: bool) -> str:
 @click.option(
     "--decompiler-model",
     help="Model for Decompiler agent",
+)
+@click.option(
+    "--diff-provider",
+    help="Provider for Diff agent",
+)
+@click.option(
+    "--diff-model",
+    help="Model for Diff agent",
 )
 @click.option(
     "--judge-provider",
@@ -194,7 +208,7 @@ def _configure_logging(verbose: int, quiet: bool) -> str:
     help="Enable or disable OpenTelemetry.",
 )
 @click.version_option(version=_get_version())
-def main(  # noqa: PLR0913
+def main(  # noqa: PLR0913, PLR0915
     prompt_input: str | None,
     output: Path | None,
     source: str,
@@ -208,6 +222,8 @@ def main(  # noqa: PLR0913
     architect_model: str | None,
     decompiler_provider: str | None,
     decompiler_model: str | None,
+    diff_provider: str | None,
+    diff_model: str | None,
     judge_provider: str | None,
     judge_model: str | None,
     env: str,
@@ -241,9 +257,20 @@ def main(  # noqa: PLR0913
         architect_model,
         decompiler_provider,
         decompiler_model,
+        diff_provider,
+        diff_model,
         judge_provider,
         judge_model,
     )
+
+    # 2b. Auto-detect providers from model registry if not specified
+    registry = ModelRegistry()
+    if source_provider is None:
+        source_model = registry.get_model(source)
+        source_provider = source_model.provider.provider
+    if target_provider is None:
+        target_model = registry.get_model(target)
+        target_provider = target_model.provider.provider
 
     # 3. Validate Input
     if not prompt_input:
@@ -301,6 +328,13 @@ def main(  # noqa: PLR0913
                 click.echo(result.prompt)
                 if not quiet:
                     click.echo("\n-----------------------\n")
+
+            # 6. Optional semantic diff explanation
+            diff_summary = getattr(result, "diff_summary", None)
+            if not quiet and diff_summary:
+                click.echo("\n--- Semantic Diff ---\n")
+                click.echo(diff_summary)
+                click.echo("\n---------------------\n")
 
         except Exception as e:
             logger.error("Compilation failed", error=str(e))

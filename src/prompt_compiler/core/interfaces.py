@@ -50,6 +50,15 @@ class IPilot(ABC):
         pass
 
 
+class IDiffAgent(ABC):
+    """Contract for a Diff/Summary Role (Explainer)."""
+
+    @abstractmethod
+    async def summarize_diff(self, original: OriginalPrompt, candidate: CandidatePrompt) -> str:
+        """Returns a semantic summary of how the candidate differs from the original prompt."""
+        pass
+
+
 class IJudge(ABC):
     """Contract for the Judge Role (Scorer)."""
 

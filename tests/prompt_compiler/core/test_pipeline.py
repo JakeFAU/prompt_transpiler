@@ -5,6 +5,7 @@ import pytest
 from prompt_compiler.core.interfaces import (
     IArchitect,
     IDecompiler,
+    IDiffAgent,
     IHistorian,
     IJudge,
     IPilot,
@@ -94,15 +95,18 @@ def mock_roles(mock_model, mock_ir, mock_candidate_factory):
     judge = MagicMock(spec=IJudge)
     judge.evaluate = AsyncMock(return_value=0.0)
 
+    diff_agent = MagicMock(spec=IDiffAgent)
+    diff_agent.summarize_diff = AsyncMock(return_value="diff summary")
+
     scoring = MagicMock(spec=ScoringAlgorithm)
     scoring.calculate_score = MagicMock(return_value=0.95)
 
-    return historian, decompiler, architect, pilot, judge, scoring
+    return historian, decompiler, architect, pilot, judge, diff_agent, scoring
 
 
 @pytest.mark.asyncio
 async def test_pipeline_success(mock_roles, mock_model):
-    historian, decompiler, architect, pilot, judge, scoring = mock_roles
+    historian, decompiler, architect, pilot, judge, diff_agent, scoring = mock_roles
 
     pipeline = PromptCompilerPipeline(
         historian=historian,
@@ -110,6 +114,7 @@ async def test_pipeline_success(mock_roles, mock_model):
         architect=architect,
         pilot=pilot,
         judge=judge,
+        diff_agent=diff_agent,
         scoring_algorithm=scoring,
         score_threshold=0.9,
         max_retries=1,
@@ -123,12 +128,13 @@ async def test_pipeline_success(mock_roles, mock_model):
     architect.design_prompt.assert_called_once()
     pilot.test_candidate.assert_called_once()
     judge.evaluate.assert_called_once()
+    diff_agent.summarize_diff.assert_called_once()
     scoring.calculate_score.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_pipeline_retry_loop(mock_roles, mock_model):
-    historian, decompiler, architect, pilot, judge, scoring = mock_roles
+    historian, decompiler, architect, pilot, judge, diff_agent, scoring = mock_roles
 
     # First attempt fails threshold, second succeeds
     scoring.calculate_score.side_effect = [0.5, 0.95]
@@ -139,6 +145,7 @@ async def test_pipeline_retry_loop(mock_roles, mock_model):
         architect=architect,
         pilot=pilot,
         judge=judge,
+        diff_agent=diff_agent,
         scoring_algorithm=scoring,
         score_threshold=0.9,
         max_retries=2,
@@ -151,12 +158,13 @@ async def test_pipeline_retry_loop(mock_roles, mock_model):
     assert architect.design_prompt.call_count == EXPECTED_RETRY_COUNT
     assert pilot.test_candidate.call_count == EXPECTED_RETRY_COUNT
     assert judge.evaluate.call_count == EXPECTED_RETRY_COUNT
+    diff_agent.summarize_diff.assert_called_once()
     assert scoring.calculate_score.call_count == EXPECTED_RETRY_COUNT
 
 
 @pytest.mark.asyncio
 async def test_pipeline_early_stopping(mock_roles, mock_model):
-    historian, decompiler, architect, pilot, judge, scoring = mock_roles
+    historian, decompiler, architect, pilot, judge, diff_agent, scoring = mock_roles
 
     # Scores don't improve
     scoring.calculate_score.side_effect = [0.5, 0.4, 0.4]
@@ -167,6 +175,7 @@ async def test_pipeline_early_stopping(mock_roles, mock_model):
         architect=architect,
         pilot=pilot,
         judge=judge,
+        diff_agent=diff_agent,
         scoring_algorithm=scoring,
         score_threshold=0.9,
         max_retries=5,
@@ -182,11 +191,12 @@ async def test_pipeline_early_stopping(mock_roles, mock_model):
     # 3. score 0.4. best=0.5. patience=2. -> break
 
     assert architect.design_prompt.call_count == EXPECTED_EARLY_STOP_COUNT
+    diff_agent.summarize_diff.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_pipeline_max_retries_reached(mock_roles, mock_model):
-    historian, decompiler, architect, pilot, judge, scoring = mock_roles
+    historian, decompiler, architect, pilot, judge, diff_agent, scoring = mock_roles
 
     scoring.calculate_score.return_value = 0.5
 
@@ -196,6 +206,7 @@ async def test_pipeline_max_retries_reached(mock_roles, mock_model):
         architect=architect,
         pilot=pilot,
         judge=judge,
+        diff_agent=diff_agent,
         scoring_algorithm=scoring,
         score_threshold=0.9,
         max_retries=1,
@@ -205,11 +216,12 @@ async def test_pipeline_max_retries_reached(mock_roles, mock_model):
 
     assert result.prompt == "candidate"
     assert architect.design_prompt.call_count == EXPECTED_RETRY_COUNT  # Initial + 1 retry
+    diff_agent.summarize_diff.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_pipeline_failure(mock_roles):
-    historian, decompiler, architect, pilot, judge, scoring = mock_roles
+    historian, decompiler, architect, pilot, judge, diff_agent, scoring = mock_roles
 
     historian.establish_baseline.side_effect = Exception("Boom")
 
@@ -219,11 +231,14 @@ async def test_pipeline_failure(mock_roles):
         architect=architect,
         pilot=pilot,
         judge=judge,
+        diff_agent=diff_agent,
         scoring_algorithm=scoring,
     )
 
     with pytest.raises(Exception, match="Boom"):
         await pipeline.run(raw_prompt="raw", source_model="gpt-4", target_model="gemini-pro")
+
+    diff_agent.summarize_diff.assert_not_called()
 
 
 @pytest.mark.asyncio

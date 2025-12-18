@@ -6,6 +6,7 @@ from prompt_compiler.config import settings
 from prompt_compiler.core.interfaces import (
     IArchitect,
     IDecompiler,
+    IDiffAgent,
     IHistorian,
     IJudge,
     IPilot,
@@ -13,6 +14,7 @@ from prompt_compiler.core.interfaces import (
 from prompt_compiler.core.registry import ModelRegistry
 from prompt_compiler.core.roles.architect import GPTArchitect
 from prompt_compiler.core.roles.decompiler import GeminiDecompiler
+from prompt_compiler.core.roles.diff import SemanticDiffAgent
 from prompt_compiler.core.roles.historian import DefaultHistorian
 from prompt_compiler.core.roles.pilot import DefaultPilot
 from prompt_compiler.core.scoring import (
@@ -52,6 +54,13 @@ def _default_judge() -> IJudge:
     )
 
 
+def _default_diff_agent() -> IDiffAgent:
+    return SemanticDiffAgent(
+        provider_name=settings.roles.diff.provider,
+        model_name=settings.roles.diff.model,
+    )
+
+
 @define
 class PromptCompilerPipeline:
     """
@@ -65,6 +74,7 @@ class PromptCompilerPipeline:
     architect: IArchitect = field(factory=_default_architect)
     pilot: IPilot = field(factory=DefaultPilot)
     judge: IJudge = field(factory=_default_judge)
+    diff_agent: IDiffAgent = field(factory=_default_diff_agent)
 
     # Model Registry
     registry: ModelRegistry = field(factory=ModelRegistry)
@@ -101,6 +111,23 @@ class PromptCompilerPipeline:
         if isinstance(self.judge, LLMAdjudicator):
             self.judge.scoring_algorithm = self.scoring_algorithm
             self.judge.score_threshold = self.score_threshold
+
+    async def _annotate_diff(
+        self, candidate: CandidatePrompt | None, original: OriginalPrompt
+    ) -> CandidatePrompt | None:
+        """
+        Run the diff agent to summarize how the candidate differs from the original prompt.
+        Failures are swallowed to avoid blocking compilation.
+        """
+        if candidate is None:
+            return None
+
+        try:
+            candidate.diff_summary = await self.diff_agent.summarize_diff(original, candidate)
+        except Exception as exc:
+            logger.error("Diff agent failed", error=str(exc))
+
+        return candidate
 
     @telemetry.instrument(name="pipeline.compile")
     async def run(  # noqa: PLR0915, PLR0913
@@ -190,6 +217,7 @@ class PromptCompilerPipeline:
                 if final_score >= self.score_threshold:
                     logger.info("Threshold met!", score=final_score)
                     self._success_counter.add(1)
+                    await self._annotate_diff(candidate, original)
                     return candidate
 
                 # Early Stopping check
@@ -205,11 +233,13 @@ class PromptCompilerPipeline:
             logger.warning("Max retries reached. Returning best candidate.", best_score=best_score)
             if best_candidate:
                 self._success_counter.add(1, {"status": "max_retries_best_effort"})
+                await self._annotate_diff(best_candidate, original)
                 return best_candidate
 
             # Fallback (should rarely happen unless first attempt failed hard)
             if candidate:
                 self._success_counter.add(1, {"status": "fallback"})
+                await self._annotate_diff(candidate, original)
                 return candidate
 
             raise RuntimeError("Pipeline failed to generate any candidate prompt")

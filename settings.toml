@@ -21,8 +21,9 @@ DEFAULT_ANTHROPIC_MODEL = "claude-3-5-sonnet-latest"
 TEMPERATURE = 0.0
 
 [default.huggingface]
-DEFAULT_HF_MODEL = "meta-llama/Llama-3.2-3B-Instruct"
+DEFAULT_HF_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
 TEMPERATURE = 0.0
+MAX_TOKENS = 4096
 
 [default.roles.architect]
 PROVIDER = "openai"
@@ -41,6 +42,10 @@ PROVIDER = "openai"
 MODEL = "gpt-4o-mini"
 
 [default.roles.judge]
+PROVIDER = "openai"
+MODEL = "gpt-4o-mini"
+
+[default.roles.diff]
 PROVIDER = "openai"
 MODEL = "gpt-4o-mini"
 

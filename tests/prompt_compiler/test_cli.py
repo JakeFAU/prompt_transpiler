@@ -40,7 +40,24 @@ def test_cli_with_text_input(mock_pipeline: AsyncMock, runner: CliRunner) -> Non
     mock_result.prompt = "Optimized Prompt"
     mock_pipeline.return_value = mock_result
 
-    result = runner.invoke(main, ["Simple prompt", "-s", "gpt-4", "-t", "gemini-2.5"])
+    result = runner.invoke(
+        main,
+        [
+            "Simple prompt",
+            "-s",
+            "gpt-4",
+            "-t",
+            "gemini-2.5",
+            "--source-provider",
+            "openai",
+            "--target-provider",
+            "gemini",
+            "--diff-provider",
+            "openai",
+            "--diff-model",
+            "gpt-4o-mini",
+        ],
+    )
 
     if result.exit_code != 0:
         print(result.output)
@@ -62,7 +79,22 @@ def test_cli_output_file(mock_pipeline: AsyncMock, runner: CliRunner, tmp_path) 
 
     output_file = tmp_path / "output.txt"
 
-    result = runner.invoke(main, ["Input prompt", "-o", str(output_file)])
+    result = runner.invoke(
+        main,
+        [
+            "Input prompt",
+            "-o",
+            str(output_file),
+            "--source-provider",
+            "openai",
+            "--target-provider",
+            "gemini",
+            "--diff-provider",
+            "openai",
+            "--diff-model",
+            "gpt-4o-mini",
+        ],
+    )
 
     if result.exit_code != 0:
         print(result.output)
@@ -82,12 +114,16 @@ def test_cli_updates_settings(runner: CliRunner) -> None:
             architect_model="test_model",
             decompiler_provider=None,
             decompiler_model=None,
+            diff_provider="diff_test_provider",
+            diff_model="diff_test_model",
             judge_provider=None,
             judge_model=None,
         )
 
         assert settings.roles.architect.provider == "test_provider"
         assert settings.roles.architect.model == "test_model"
+        assert settings.roles.diff.provider == "diff_test_provider"
+        assert settings.roles.diff.model == "diff_test_model"
 
     finally:
         # cleanup/restore if needed, though settings might be process global
