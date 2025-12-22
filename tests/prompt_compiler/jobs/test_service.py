@@ -1,0 +1,54 @@
+# ruff: noqa: PLR0913
+
+from typing import Any, cast
+
+from prompt_compiler.core.pipeline import PromptCompilerPipeline
+from prompt_compiler.core.registry import ModelRegistry
+from prompt_compiler.core.scoring import get_scoring_algorithm
+from prompt_compiler.jobs.service import run_compile_job
+from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
+
+
+def test_run_compile_job_builds_response(monkeypatch):
+    registry = ModelRegistry()
+    source_model_name = "gpt-4o-mini"
+    target_model_name = "gemini-2.5-flash"
+    source_model = registry.get_model(source_model_name)
+    target_model = registry.get_model(target_model_name)
+
+    candidate = CandidatePrompt(prompt="compiled", model=target_model)
+    candidate.primary_intent_score = 0.9
+    candidate.tone_voice_score = 0.8
+    candidate.constraint_scores = {"rule": 0.95}
+    candidate.feedback = "ok"
+    candidate.diff_summary = "diff"
+
+    algo = get_scoring_algorithm("weighted")
+    original = OriginalPrompt(prompt="raw", model=source_model)
+    candidate.total_score(algo, original)
+
+    async def fake_run(
+        self, raw_prompt, source_model, target_model, source_provider, target_provider, max_retries
+    ):
+        return candidate
+
+    monkeypatch.setattr(PromptCompilerPipeline, "run", fake_run)
+
+    job = {
+        "job_id": "job-1",
+        "request": {
+            "raw_prompt": "raw",
+            "source_model": source_model_name,
+            "target_model": target_model_name,
+            "max_retries": 1,
+            "score_threshold": 0.8,
+            "scoring_algo": "weighted",
+            "role_overrides": {"architect_provider": "openai"},
+        },
+    }
+
+    result = run_compile_job(cast(Any, job), registry)
+    assert result["candidate_prompt"] == "compiled"
+    assert result["scores"]["final_score"] is not None
+    assert result["models"]["source_model"]["model_name"] == source_model_name
+    assert result["models"]["target_model"]["model_name"] == target_model_name

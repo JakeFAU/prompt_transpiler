@@ -129,6 +129,55 @@ prompt-compiler "Your prompt" -v
 prompt-compiler "Your prompt" --no-telemetry
 ```
 
+### REST API
+
+Run the API server from the project root:
+
+```bash
+# Local dev
+prompt-compiler-api
+
+# Or with gunicorn
+gunicorn -b 0.0.0.0:${PORT:-8080} prompt_compiler.api.app:app
+```
+
+Docs:
+
+* `http://localhost:8080/docs`
+* `http://localhost:8080/redoc`
+* `http://localhost:8080/openapi.json`
+
+Environment variables:
+
+* `HOST` (default `0.0.0.0`)
+* `PORT` (default `8080`)
+* `JOB_STORE` (`duckdb|sqlite|memory`, default `duckdb`)
+* `JOB_DB_PATH` (default `/tmp/prompt_compiler_jobs.duckdb`)
+* `JOB_RETENTION_HOURS` (default `24`)
+* `WORKER_ENABLED` (default `true`)
+* `WORKER_POLL_INTERVAL_MS` (default `500`)
+* `WORKER_CONCURRENCY` (default `1`)
+* Provider secrets (OpenAI, Gemini, Anthropic, etc.) via env vars
+
+Example API flow:
+
+```bash
+# Enqueue a compile job
+curl -X POST http://localhost:8080/v1/compile-jobs \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "raw_prompt": "Summarize this text into a bullet list.",
+    "source_model": "gpt-4o-mini",
+    "target_model": "gemini-2.5-flash"
+  }'
+
+# Check status
+curl http://localhost:8080/v1/compile-jobs/<job_id>
+
+# Fetch result
+curl http://localhost:8080/v1/compile-jobs/<job_id>/result
+```
+
 ### As a Library
 
 ```python
