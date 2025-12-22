@@ -1,3 +1,5 @@
+"""Factory for constructing LLM provider adapters."""
+
 from prompt_compiler.llm.anthropic import AnthropicAdapter
 from prompt_compiler.llm.base import LLMProvider
 from prompt_compiler.llm.gemini import GeminiAdapter

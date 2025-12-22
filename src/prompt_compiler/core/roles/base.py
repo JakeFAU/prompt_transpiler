@@ -1,3 +1,5 @@
+"""Base role utilities for telemetry metadata."""
+
 from typing import Any
 
 

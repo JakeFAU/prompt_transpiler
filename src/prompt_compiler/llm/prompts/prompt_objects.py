@@ -1,3 +1,5 @@
+"""Prompt data objects and scoring strategy interfaces."""
+
 from abc import ABC, abstractmethod
 from typing import Any
 

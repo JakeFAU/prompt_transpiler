@@ -1,3 +1,10 @@
+"""
+Application factory for the Prompt Compiler API service.
+
+Use `create_app()` for testability and to avoid import side effects. The module-level
+`app` instance is provided for WSGI servers but does not auto-start background workers.
+"""
+
 import logging
 import os
 from importlib.metadata import PackageNotFoundError
@@ -18,7 +25,8 @@ from prompt_compiler.utils.logging import configure_logging, get_logger
 logger = get_logger(__name__)
 
 
-def create_app() -> APIFlask:
+def create_app(start_worker_flag: bool | None = None) -> APIFlask:
+    """Create and configure the APIFlask application instance."""
     app = APIFlask(
         __name__,
         title="Prompt Compiler API",
@@ -50,7 +58,10 @@ def create_app() -> APIFlask:
         {"name": "scoring", "description": "Supported scoring strategies."},
     ]
 
-    if parse_bool_env("WORKER_ENABLED", True):
+    worker_enabled = (
+        parse_bool_env("WORKER_ENABLED", True) if start_worker_flag is None else start_worker_flag
+    )
+    if worker_enabled:
         poll_interval_ms = parse_int_env("WORKER_POLL_INTERVAL_MS", 500)
         concurrency = parse_int_env("WORKER_CONCURRENCY", 1)
         retention = parse_int_env("JOB_RETENTION_HOURS", 24)
@@ -90,11 +101,13 @@ def _get_version() -> str:
         return "0.0.0"
 
 
-app = create_app()
+app = create_app(start_worker_flag=False)
 
 
 def main() -> None:
+    """Run the API server using Flask's development runner."""
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
     debug = os.getenv("PROMPT_COMPILER_ENV", "dev").lower() == "dev"
-    app.run(host=host, port=port, debug=debug)
+    api = create_app()
+    api.run(host=host, port=port, debug=debug)

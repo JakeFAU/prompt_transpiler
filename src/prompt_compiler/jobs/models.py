@@ -1,8 +1,12 @@
+"""Typed models for compile job status and payloads."""
+
 from enum import Enum
 from typing import Any, TypedDict
 
 
 class JobStatus(str, Enum):
+    """Lifecycle states for a compile job."""
+
     QUEUED = "queued"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
@@ -11,12 +15,16 @@ class JobStatus(str, Enum):
 
 
 class JobError(TypedDict, total=False):
+    """Structured error details for failed jobs."""
+
     code: str
     message: str
     details: dict[str, Any]
 
 
 class JobRecord(TypedDict, total=False):
+    """Storage record for a compile job."""
+
     job_id: str
     status: str
     request: dict[str, Any]

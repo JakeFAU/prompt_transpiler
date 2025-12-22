@@ -1,3 +1,5 @@
+"""Diff agent role for summarizing prompt changes."""
+
 import json
 
 from attrs import define
@@ -49,6 +51,7 @@ class SemanticDiffAgent(IDiffAgent, BaseRole):
         return system_prompt, user_prompt
 
     async def summarize_diff(self, original: OriginalPrompt, candidate: CandidatePrompt) -> str:
+        """Generate a human-readable summary of prompt differences."""
         attributes = self._get_base_attributes()
         attributes["prompt_compiler.target_model"] = candidate.model.model_name
 

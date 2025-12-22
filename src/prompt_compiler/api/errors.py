@@ -1,3 +1,5 @@
+"""Error response helpers and APIFlask error handler registration."""
+
 from typing import Any
 
 from apiflask import APIFlask, HTTPError
@@ -14,6 +16,7 @@ def make_error_response(
     message: str,
     details: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Build a standard API error response payload."""
     return {
         "error": {
             "code": code,
@@ -24,6 +27,8 @@ def make_error_response(
 
 
 def register_error_handlers(app: APIFlask) -> None:
+    """Register validation and HTTP exception handlers on the API app."""
+
     @app.errorhandler(ValidationError)
     def handle_validation_error(error: ValidationError) -> tuple[dict[str, Any], int]:
         details: dict[str, Any]

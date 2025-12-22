@@ -34,6 +34,8 @@ CompilerFunc = Callable[[JobRecord, ModelRegistry], dict[str, Any]]
 
 
 class JobService:
+    """Service layer that manages compile job lifecycle and execution."""
+
     def __init__(
         self,
         store: JobStore,
@@ -45,15 +47,19 @@ class JobService:
         self._compiler = compiler or run_compile_job
 
     def enqueue_compile(self, request: dict[str, Any]) -> str:
+        """Create a new compile job and return its identifier."""
         return self.store.create_job(request)
 
     def get_status(self, job_id: str) -> JobRecord | None:
+        """Fetch job status and metadata."""
         return self.store.get_job(job_id)
 
     def get_result(self, job_id: str) -> JobRecord | None:
+        """Fetch job metadata for result polling."""
         return self.store.get_job(job_id)
 
     def cancel(self, job_id: str) -> JobRecord | None:
+        """Cancel a job or mark it as cancel_requested if already running."""
         job = self.store.get_job(job_id)
         if not job:
             return None
@@ -71,9 +77,11 @@ class JobService:
         return job
 
     def claim_next(self, worker_id: str) -> JobRecord | None:
+        """Claim the next available job for the given worker."""
         return self.store.claim_next_job(worker_id)
 
     def run_job(self, job: JobRecord) -> None:
+        """Run a claimed job and persist the result or failure."""
         job_id = job["job_id"]
         if job.get("cancel_requested"):
             self.store.update_job(
@@ -98,6 +106,7 @@ class JobService:
 
 
 def run_compile_job(job: JobRecord, registry: ModelRegistry) -> dict[str, Any]:
+    """Execute a compile job payload and return the API response payload."""
     request = job.get("request") or {}
     raw_prompt = request.get("raw_prompt", "")
     source_model = request.get("source_model", "")

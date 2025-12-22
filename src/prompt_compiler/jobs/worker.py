@@ -26,6 +26,8 @@ logger = get_logger(__name__)
 
 
 class WorkerController:
+    """Lifecycle controller for background worker threads."""
+
     def __init__(
         self, service: JobService, poll_interval_ms: int, retention_hours: int | None
     ) -> None:
@@ -35,9 +37,11 @@ class WorkerController:
         self._stop_event = threading.Event()
 
     def stop(self) -> None:
+        """Signal worker threads to stop polling."""
         self._stop_event.set()
 
     def should_stop(self) -> bool:
+        """Return True when a stop has been requested."""
         return self._stop_event.is_set()
 
 
@@ -47,6 +51,7 @@ def start_worker(
     concurrency: int = 1,
     retention_hours: int | None = None,
 ) -> WorkerController:
+    """Start background worker threads and return a controller."""
     controller = WorkerController(service, poll_interval_ms, retention_hours)
     for index in range(concurrency):
         worker_id = f"worker-{index + 1}"

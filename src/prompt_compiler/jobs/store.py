@@ -26,22 +26,40 @@ from prompt_compiler.jobs.util import generate_job_id, json_dumps, json_loads, u
 
 
 class JobStore(Protocol):
-    def create_job(self, request: dict[str, Any]) -> str: ...
+    """Protocol defining the storage interface for compile jobs."""
 
-    def get_job(self, job_id: str) -> JobRecord | None: ...
+    def create_job(self, request: dict[str, Any]) -> str:
+        """Persist a new job request and return its identifier."""
+        ...
 
-    def update_job(self, job_id: str, **fields: Any) -> None: ...
+    def get_job(self, job_id: str) -> JobRecord | None:
+        """Fetch a job record by ID."""
+        ...
 
-    def claim_next_job(self, worker_id: str) -> JobRecord | None: ...
+    def update_job(self, job_id: str, **fields: Any) -> None:
+        """Update fields on a job record."""
+        ...
 
-    def complete_job(self, job_id: str, result: dict[str, Any]) -> None: ...
+    def claim_next_job(self, worker_id: str) -> JobRecord | None:
+        """Claim the next queued job for a worker."""
+        ...
 
-    def fail_job(self, job_id: str, error: JobError) -> None: ...
+    def complete_job(self, job_id: str, result: dict[str, Any]) -> None:
+        """Mark a job as succeeded and store its result."""
+        ...
 
-    def purge_expired(self, cutoff_iso: str) -> int: ...
+    def fail_job(self, job_id: str, error: JobError) -> None:
+        """Mark a job as failed and store its error details."""
+        ...
+
+    def purge_expired(self, cutoff_iso: str) -> int:
+        """Purge completed jobs older than the cutoff timestamp."""
+        ...
 
 
 class DuckDBJobStore:
+    """DuckDB-backed job store optimized for analytics-friendly storage."""
+
     def __init__(self, db_path: str) -> None:
         if _duckdb is None:  # pragma: no cover - only for missing dependency
             raise RuntimeError("DuckDBJobStore requires the 'duckdb' package to be installed.")
@@ -53,6 +71,7 @@ class DuckDBJobStore:
         self._init_schema()
 
     def _init_schema(self) -> None:
+        """Ensure the compile jobs table exists."""
         with self._lock:
             self._conn.execute(
                 """
@@ -75,6 +94,7 @@ class DuckDBJobStore:
             )
 
     def create_job(self, request: dict[str, Any]) -> str:
+        """Create a new job record and return its identifier."""
         job_id = generate_job_id()
         now = utc_now_iso()
         with self._lock:
@@ -96,6 +116,7 @@ class DuckDBJobStore:
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
+        """Fetch a job record by ID."""
         with self._lock:
             row = self._conn.execute(
                 """
@@ -111,6 +132,7 @@ class DuckDBJobStore:
         return _row_to_record(row)
 
     def update_job(self, job_id: str, **fields: Any) -> None:
+        """Update fields on a job record."""
         if not fields:
             return
         fields["updated_at"] = utc_now_iso()
@@ -122,6 +144,7 @@ class DuckDBJobStore:
             )
 
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
+        """Atomically claim the next queued job for a worker."""
         with self._lock:
             self._conn.execute("BEGIN TRANSACTION")
             row = self._conn.execute(
@@ -158,6 +181,7 @@ class DuckDBJobStore:
         return self.get_job(job_id)
 
     def complete_job(self, job_id: str, result: dict[str, Any]) -> None:
+        """Mark a job as succeeded and store its result."""
         self.update_job(
             job_id,
             status=JobStatus.SUCCEEDED.value,
@@ -167,6 +191,7 @@ class DuckDBJobStore:
         )
 
     def fail_job(self, job_id: str, error: JobError) -> None:
+        """Mark a job as failed and store its error details."""
         self.update_job(
             job_id,
             status=JobStatus.FAILED.value,
@@ -176,8 +201,25 @@ class DuckDBJobStore:
         )
 
     def purge_expired(self, cutoff_iso: str) -> int:
+        """Delete completed jobs older than the cutoff timestamp."""
         with self._lock:
-            result = self._conn.execute(
+            count_row = self._conn.execute(
+                """
+                SELECT COUNT(*)
+                FROM compile_jobs
+                WHERE completed_at IS NOT NULL
+                  AND completed_at < ?
+                  AND status IN (?, ?, ?)
+                """,
+                [
+                    cutoff_iso,
+                    JobStatus.SUCCEEDED.value,
+                    JobStatus.FAILED.value,
+                    JobStatus.CANCELED.value,
+                ],
+            ).fetchone()
+            count = int(count_row[0]) if count_row else 0
+            self._conn.execute(
                 """
                 DELETE FROM compile_jobs
                 WHERE completed_at IS NOT NULL
@@ -191,10 +233,12 @@ class DuckDBJobStore:
                     JobStatus.CANCELED.value,
                 ],
             )
-            return int(result.rowcount or 0)
+            return count
 
 
 class SQLiteJobStore:
+    """SQLite-backed job store for lightweight deployments."""
+
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._lock = threading.Lock()
@@ -203,6 +247,7 @@ class SQLiteJobStore:
         self._init_schema()
 
     def _init_schema(self) -> None:
+        """Ensure the compile jobs table exists."""
         with self._lock:
             self._conn.execute(
                 """
@@ -226,6 +271,7 @@ class SQLiteJobStore:
             self._conn.commit()
 
     def create_job(self, request: dict[str, Any]) -> str:
+        """Create a new job record and return its identifier."""
         job_id = generate_job_id()
         now = utc_now_iso()
         with self._lock:
@@ -248,6 +294,7 @@ class SQLiteJobStore:
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
+        """Fetch a job record by ID."""
         with self._lock:
             row = self._conn.execute(
                 """
@@ -263,6 +310,7 @@ class SQLiteJobStore:
         return _row_to_record(tuple(row))
 
     def update_job(self, job_id: str, **fields: Any) -> None:
+        """Update fields on a job record."""
         if not fields:
             return
         fields["updated_at"] = utc_now_iso()
@@ -275,6 +323,7 @@ class SQLiteJobStore:
             self._conn.commit()
 
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
+        """Atomically claim the next queued job for a worker."""
         with self._lock:
             self._conn.execute("BEGIN IMMEDIATE")
             row = self._conn.execute(
@@ -311,6 +360,7 @@ class SQLiteJobStore:
         return self.get_job(job_id)
 
     def complete_job(self, job_id: str, result: dict[str, Any]) -> None:
+        """Mark a job as succeeded and store its result."""
         self.update_job(
             job_id,
             status=JobStatus.SUCCEEDED.value,
@@ -320,6 +370,7 @@ class SQLiteJobStore:
         )
 
     def fail_job(self, job_id: str, error: JobError) -> None:
+        """Mark a job as failed and store its error details."""
         self.update_job(
             job_id,
             status=JobStatus.FAILED.value,
@@ -329,6 +380,7 @@ class SQLiteJobStore:
         )
 
     def purge_expired(self, cutoff_iso: str) -> int:
+        """Delete completed jobs older than the cutoff timestamp."""
         with self._lock:
             cur = self._conn.execute(
                 """
@@ -349,11 +401,14 @@ class SQLiteJobStore:
 
 
 class MemoryJobStore:
+    """In-memory job store for tests and local development."""
+
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[str, JobRecord] = {}
 
     def create_job(self, request: dict[str, Any]) -> str:
+        """Create a new job record and return its identifier."""
         job_id = generate_job_id()
         now = utc_now_iso()
         with self._lock:
@@ -375,11 +430,13 @@ class MemoryJobStore:
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
+        """Fetch a job record by ID."""
         with self._lock:
             job = self._jobs.get(job_id)
             return cast(JobRecord, dict(job)) if job else None
 
     def update_job(self, job_id: str, **fields: Any) -> None:
+        """Update fields on a job record."""
         if not fields:
             return
         with self._lock:
@@ -390,6 +447,7 @@ class MemoryJobStore:
             job["updated_at"] = utc_now_iso()
 
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
+        """Claim the next queued job for a worker."""
         with self._lock:
             queued = [job for job in self._jobs.values() if job["status"] == JobStatus.QUEUED.value]  # pyright: ignore[reportTypedDictNotRequiredAccess]
             if not queued:
@@ -405,6 +463,7 @@ class MemoryJobStore:
             return cast(JobRecord, dict(job))
 
     def complete_job(self, job_id: str, result: dict[str, Any]) -> None:
+        """Mark a job as succeeded and store its result."""
         self.update_job(
             job_id,
             status=JobStatus.SUCCEEDED.value,
@@ -414,6 +473,7 @@ class MemoryJobStore:
         )
 
     def fail_job(self, job_id: str, error: JobError) -> None:
+        """Mark a job as failed and store its error details."""
         self.update_job(
             job_id,
             status=JobStatus.FAILED.value,
@@ -423,6 +483,7 @@ class MemoryJobStore:
         )
 
     def purge_expired(self, cutoff_iso: str) -> int:
+        """Delete completed jobs older than the cutoff timestamp."""
         with self._lock:
             to_delete = [
                 job_id
@@ -442,6 +503,7 @@ class MemoryJobStore:
 
 
 def _row_to_record(row: tuple[Any, ...]) -> JobRecord:
+    """Convert a database row tuple into a JobRecord dict."""
     (
         job_id,
         status,
@@ -475,6 +537,7 @@ def _row_to_record(row: tuple[Any, ...]) -> JobRecord:
 
 
 def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
+    """Convert update fields into a SQL clause and parameter list."""
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():

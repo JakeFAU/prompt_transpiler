@@ -1,3 +1,5 @@
+"""Prompt compilation orchestration pipeline."""
+
 from typing import Any
 
 from attrs import define, field

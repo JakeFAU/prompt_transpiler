@@ -1,3 +1,5 @@
+"""Command-line interface for running the Prompt Compiler pipeline."""
+
 import asyncio
 import logging
 import sys
