@@ -1,3 +1,5 @@
+"""Token usage aggregation utilities."""
+
 from collections import defaultdict
 from threading import Lock
 

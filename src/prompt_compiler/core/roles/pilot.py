@@ -1,3 +1,5 @@
+"""Pilot role implementation for candidate evaluation runs."""
+
 from attrs import define
 
 from prompt_compiler.core.interfaces import IPilot

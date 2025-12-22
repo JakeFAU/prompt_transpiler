@@ -1,3 +1,17 @@
+"""
+Scoring algorithms and LLM-based evaluation for prompt quality.
+
+This module implements the Judge role's scoring strategies, providing multiple
+algorithms to evaluate how well a compiled prompt matches the original intent:
+
+- WeightedScoreAlgorithm: Standard weighted average (intent 50%, tone 30%, constraints 20%)
+- GeometricMeanAlgorithm: Strict mode - any weak component tanks the score
+- PenaltyAlgorithm: Linter-style deductions for failures
+- DynamicScoringAlgorithm: Adapts weights based on detected prompt type
+
+The LLMAdjudicator uses an LLM to evaluate prompts and populate score fields.
+"""
+
 import json
 import math
 

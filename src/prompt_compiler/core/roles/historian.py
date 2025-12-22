@@ -1,3 +1,5 @@
+"""Historian role implementation for baseline capture."""
+
 from attrs import define
 
 from prompt_compiler.core.exceptions import ProviderError

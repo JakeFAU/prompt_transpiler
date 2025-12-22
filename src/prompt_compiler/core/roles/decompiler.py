@@ -1,3 +1,5 @@
+"""Decompiler role implementation for extracting prompt specifications."""
+
 import json
 
 from attrs import define
@@ -57,15 +59,17 @@ class GeminiDecompiler(IDecompiler, BaseRole):
             - **rule**: Do NOT extract specific entities as variables if the user provided them.
             - **rule**: Embed the specific data directly into the `intent` or `context` fields.
 
-            ### JSON Output Schema
+            ### JSON Output Schema (must match exactly)
             {
                 "primary_intent": "The core goal (e.g. 'Summarize Fight Club using emojis')",
+                "tone_voice": "Playful",
+                "domain_context": "Specific data to process (e.g. 'Movie: Fight Club')",
                 "constraints": ["No text", "Emojis only"],
-                "context": "The specific data to process (e.g. 'Movie: Fight Club')",
-                "variables": [],
-                "tone_voice": "Playful"
+                "input_format": "Describe the expected input shape",
+                "output_schema": "Describe the expected output format",
+                "few_shot_examples": [{"input": "...", "output": "..."}]
             }
-            // Note: For Type B requests, the "variables" array should be kept empty.
+            // Note: Use an empty list for few_shot_examples if none apply.
         """
 
     async def decompile(

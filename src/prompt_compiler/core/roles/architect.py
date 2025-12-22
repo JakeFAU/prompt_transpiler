@@ -1,3 +1,5 @@
+"""Architect role implementation for prompt synthesis."""
+
 import json
 
 from attrs import define
