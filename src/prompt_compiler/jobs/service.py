@@ -27,6 +27,7 @@ from prompt_compiler.jobs.store import JobStore
 from prompt_compiler.jobs.util import run_coroutine_sync, utc_now_iso
 from prompt_compiler.llm.prompts.prompt_objects import CandidatePrompt, OriginalPrompt
 from prompt_compiler.utils.logging import get_logger
+from prompt_compiler.utils.token_collector import token_collector
 
 logger = get_logger(__name__)
 
@@ -107,6 +108,7 @@ class JobService:
 
 def run_compile_job(job: JobRecord, registry: ModelRegistry) -> dict[str, Any]:
     """Execute a compile job payload and return the API response payload."""
+    usage_before = _token_usage_snapshot()
     request = job.get("request") or {}
     raw_prompt = request.get("raw_prompt", "")
     source_model = request.get("source_model", "")
@@ -149,6 +151,8 @@ def run_compile_job(job: JobRecord, registry: ModelRegistry) -> dict[str, Any]:
             max_retries=max_retries,
         )
     )
+    usage_after = _token_usage_snapshot()
+    token_usage = _token_usage_delta(usage_before, usage_after)
 
     final_score = getattr(candidate, "_cached_score", None)
     if final_score is None:
@@ -171,6 +175,7 @@ def run_compile_job(job: JobRecord, registry: ModelRegistry) -> dict[str, Any]:
             "final_score": final_score,
             "role_overrides": role_overrides,
             "role_settings": _effective_role_settings(role_overrides),
+            "token_usage": token_usage,
         }
     )
 
@@ -235,6 +240,7 @@ def _build_compile_response(payload: dict[str, Any]) -> dict[str, Any]:
     final_score: float = payload["final_score"]
     role_overrides: dict[str, Any] = payload["role_overrides"]
     role_settings: dict[str, Any] = payload["role_settings"]
+    token_usage: dict[str, dict[str, int]] = payload["token_usage"]
 
     model_schema = ModelSchema()
     source_model_obj = registry.get_model(source_model, source_provider)
@@ -269,6 +275,7 @@ def _build_compile_response(payload: dict[str, Any]) -> dict[str, Any]:
                 "scoring_algo": request.get("scoring_algo"),
             },
         },
+        "token_usage": token_usage,
     }
 
 
@@ -291,3 +298,32 @@ def _effective_role_settings(overrides: dict[str, Any]) -> dict[str, Any]:
             "model": overrides.get("judge_model") or settings.roles.judge.model,
         },
     }
+
+
+def _token_usage_snapshot() -> dict[str, dict[str, int]]:
+    summary = token_collector.get_summary()
+    return {
+        model: {
+            "prompt_tokens": usage.prompt_tokens,
+            "completion_tokens": usage.completion_tokens,
+            "total_tokens": usage.total_tokens,
+        }
+        for model, usage in summary.items()
+    }
+
+
+def _token_usage_delta(
+    before: dict[str, dict[str, int]],
+    after: dict[str, dict[str, int]],
+) -> dict[str, dict[str, int]]:
+    delta: dict[str, dict[str, int]] = {}
+    for model, usage in after.items():
+        prior = before.get(model, {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
+        model_delta = {
+            "prompt_tokens": max(0, usage["prompt_tokens"] - prior["prompt_tokens"]),
+            "completion_tokens": max(0, usage["completion_tokens"] - prior["completion_tokens"]),
+            "total_tokens": max(0, usage["total_tokens"] - prior["total_tokens"]),
+        }
+        if any(model_delta.values()):
+            delta[model] = model_delta
+    return delta

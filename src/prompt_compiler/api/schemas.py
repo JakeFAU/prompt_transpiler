@@ -17,7 +17,7 @@ from typing import Any, ClassVar
 from apiflask import Schema
 from marshmallow import fields, validate
 
-from prompt_compiler.dto.models import ModelSchema
+from prompt_compiler.dto.models import ModelSchema, TokenUsageSchema
 
 
 class RoleOverridesSchema(Schema):
@@ -89,6 +89,7 @@ class CompileResponseSchema(Schema):
     scores = fields.Nested(CompileScoresSchema)
     models = fields.Nested(CompileModelsSchema)
     run_metadata = fields.Nested(CompileRunMetadataSchema)
+    token_usage = fields.Dict(keys=fields.Str(), values=fields.Nested(TokenUsageSchema))
 
 
 class CompileJobEnqueueResponseSchema(Schema):

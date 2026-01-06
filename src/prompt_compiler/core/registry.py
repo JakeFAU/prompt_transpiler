@@ -46,6 +46,20 @@ class ModelRegistry:
         # OpenAI Models (curated list)
         self.register_model_from_dict(
             {
+                "model_name": "gpt-5.2",
+                "provider": {
+                    "provider": "openai",
+                    "provider_type": "api",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 200000,
+                "prompt_style": "markdown",
+                "supports_json_mode": True,
+                "prompting_tips": "Be concise. Use Markdown.",
+            }
+        )
+        self.register_model_from_dict(
+            {
                 "model_name": "gpt-5.1",
                 "provider": {
                     "provider": "openai",
@@ -186,6 +200,20 @@ class ModelRegistry:
         )
 
         # Gemini Models
+        self.register_model_from_dict(
+            {
+                "model_name": "gemini-3-flash-preview",
+                "provider": {
+                    "provider": "gemini",
+                    "provider_type": "api",
+                },
+                "supports_system_messages": True,
+                "context_window_size": 2000000,
+                "prompt_style": "markdown",
+                "supports_json_mode": True,
+                "prompting_tips": "Be concise. Use Markdown.",
+            }
+        )
         self.register_model_from_dict(
             {
                 "model_name": "gemini-3-pro-preview",

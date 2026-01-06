@@ -83,14 +83,14 @@ def _load_prompt(prompt_input: str, logger: logging.Logger) -> str | None:
             raw_text = prompt_path.read_text(encoding="utf-8")
             logger.info(
                 "Loaded prompt from file",
-                path=str(prompt_path),
+                path=str(prompt_path),  # pyright: ignore[reportCallIssue]
             )  # type: ignore[call-arg]
             return raw_text
         except Exception as e:
             logger.error(
                 "Failed to read prompt file",
-                path=str(prompt_path),
-                error=str(e),
+                path=str(prompt_path),  # pyright: ignore[reportCallIssue]
+                error=str(e),  # pyright: ignore[reportCallIssue]
             )  # type: ignore[call-arg]
             click.echo(f"Error reading file: {e}", err=True)
             return None

@@ -1,6 +1,6 @@
 [default]
 LOG_LEVEL = "INFO"
-USE_OPENTELEMETRY = true
+USE_OPENTELEMETRY = false
 
 [default.opentel]
 OTEL_ENDPOINT = "http://localhost:4317"
