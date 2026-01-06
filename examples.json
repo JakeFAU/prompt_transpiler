@@ -1,0 +1,145 @@
+{
+    "raw_prompt": "Analyze this balance sheet for risk factors.",
+    "source_model": "gemini-3-pro-preview",
+    "target_model": "gemini-2.5-flash",
+    "role_overrides": {
+        "architect_provider": "openai",
+        "architect_model": "gpt-4o",
+        "decompiler_provider": "openai",
+        "decompiler_model": "gpt-4o",
+        "judge_provider": "openai",
+        "judge_model": "gpt-4o"
+    }
+}
+
+{
+    "job_id": "d13594548732435aa078f3f773d9959e",
+    "result_url": "http://127.0.0.1:8080/v1/compile-jobs/d13594548732435aa078f3f773d9959e/result",
+    "status": "queued",
+    "status_url": "http://127.0.0.1:8080/v1/compile-jobs/d13594548732435aa078f3f773d9959e"
+}
+
+{
+    "cancel_requested": false,
+    "completed_at": null,
+    "created_at": "2025-12-22T18:39:00.592393+00:00",
+    "error": null,
+    "job_id": "d13594548732435aa078f3f773d9959e",
+    "progress": null,
+    "result_url": "http://127.0.0.1:8080/v1/compile-jobs/d13594548732435aa078f3f773d9959e/result",
+    "stage": "compile",
+    "started_at": "2025-12-22T18:39:00.963920+00:00",
+    "status": "running",
+    "status_url": "http://127.0.0.1:8080/v1/compile-jobs/d13594548732435aa078f3f773d9959e",
+    "updated_at": "2025-12-22T18:39:00.997658+00:00"
+}
+
+{
+    "job_id": "d13594548732435aa078f3f773d9959e",
+    "result": {
+        "candidate_prompt": "## Task: Analyze Balance Sheet for Risk Factors\n\n**Objective:** Examine the provided balance sheet and identify potential risk factors. \n\n**Output:** Present a list of identified risk factors with clear explanations for each.\n\n**Instructions:**\n- Review the financial data in the balance sheet.\n- Identify areas that may pose financial risks.\n- Provide a concise explanation for each identified risk factor.\n\n**Focus Areas:**\n- Liquidity and solvency\n- Debt levels and obligations\n- Asset valuations\n- Revenue and profit trends\n- Any anomalies or inconsistencies\n\n**Format:**\n- List each risk factor.\n- Provide a detailed explanation of why it's considered a risk.",
+        "diff_summary": "The optimized prompt provides a structured and detailed approach to analyzing a balance sheet, enhancing clarity and focus compared to the starting prompt.\n\nKey differences:\n- The optimized prompt specifies a clear task and objective, while the starting prompt is vague.\n- It includes explicit instructions and focus areas, guiding the analysis more effectively.\n- The output format is defined, ensuring consistency in responses, unlike the open-ended nature of the starting prompt.\n\nWhy it helps: These enhancements improve compatibility with the target model by providing clear expectations, reducing ambiguity, and facilitating structured responses, which are easier for the model to interpret and execute.",
+        "feedback": "The Candidate response effectively outlines the risk factors and maintains a professional tone. To improve, consider making the request for the balance sheet data more prominent at the beginning to ensure clarity.",
+        "models": {
+            "source_model": {
+                "context_window_size": 2000000,
+                "metadata": {},
+                "model_name": "gemini-3-pro-preview",
+                "prompt_style": "markdown",
+                "prompting_tips": "Be concise. Use Markdown.",
+                "provider": {
+                    "metadata": {},
+                    "provider": "gemini",
+                    "provider_type": "api"
+                },
+                "supports_json_mode": true,
+                "supports_system_messages": true
+            },
+            "target_model": {
+                "context_window_size": 1000000,
+                "metadata": {},
+                "model_name": "gemini-2.5-flash",
+                "prompt_style": "markdown",
+                "prompting_tips": "Be concise. Use Markdown.",
+                "provider": {
+                    "metadata": {},
+                    "provider": "gemini",
+                    "provider_type": "api"
+                },
+                "supports_json_mode": true,
+                "supports_system_messages": true
+            }
+        },
+        "run_metadata": {
+            "max_retries": 3,
+            "requested": {
+                "max_retries": null,
+                "score_threshold": null,
+                "scoring_algo": null
+            },
+            "role_overrides": {
+                "architect_model": "gpt-4o",
+                "architect_provider": "openai",
+                "decompiler_model": "gpt-4o",
+                "decompiler_provider": "openai",
+                "judge_model": "gpt-4o",
+                "judge_provider": "openai"
+            },
+            "role_settings": {
+                "architect": {
+                    "model": "gpt-4o",
+                    "provider": "openai"
+                },
+                "decompiler": {
+                    "model": "gpt-4o",
+                    "provider": "openai"
+                },
+                "diff": {
+                    "model": "gpt-4o-mini",
+                    "provider": "openai"
+                },
+                "judge": {
+                    "model": "gpt-4o",
+                    "provider": "openai"
+                }
+            },
+            "score_threshold": 0.8,
+            "scoring_algo": "dynamic",
+            "source_provider": "gemini",
+            "target_provider": "gemini"
+        },
+        "scores": {
+            "constraint_scores": {
+                "Outline of risk factors": 1.0,
+                "Request for balance sheet data": 1.0
+            },
+            "domain_context_score": null,
+            "final_score": 0.9299999999999999,
+            "primary_intent_score": 0.9,
+            "tone_voice_score": 0.9
+        },
+        "token_usage": {
+            "gemini-2.5-flash": {
+                "completion_tokens": 755,
+                "prompt_tokens": 910,
+                "total_tokens": 1665
+            },
+            "gemini-3-pro-preview": {
+                "completion_tokens": 283,
+                "prompt_tokens": 744,
+                "total_tokens": 1027
+            },
+            "gpt-4o": {
+                "completion_tokens": 279,
+                "prompt_tokens": 1794,
+                "total_tokens": 2073
+            },
+            "gpt-4o-mini": {
+                "completion_tokens": 122,
+                "prompt_tokens": 275,
+                "total_tokens": 397
+            }
+        }
+    },
+    "status": "succeeded"
+}
