@@ -1,5 +1,6 @@
 import pytest
 import structlog
+
 from prompt_transpiler.utils.logging import set_context
 
 
