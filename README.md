@@ -172,7 +172,7 @@ Environment variables:
 * `HOST` (default `0.0.0.0`)
 * `PORT` (default `8080`)
 * `JOB_STORE` (`duckdb|sqlite|memory`, default `duckdb`)
-* `JOB_DB_PATH` (default `/tmp/prompt_transpiler_jobs.duckdb`)
+* `JOB_DB_PATH` (default `~/.prompt_transpiler/jobs.duckdb` locally, `/app/data/jobs.duckdb` in Docker)
 * `JOB_RETENTION_HOURS` (default `24`)
 * `WORKER_ENABLED` (default `true`)
 * `WORKER_POLL_INTERVAL_MS` (default `500`)
