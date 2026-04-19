@@ -21,6 +21,7 @@ from prompt_transpiler.core.roles.architect import GPTArchitect
 from prompt_transpiler.core.roles.decompiler import GeminiDecompiler
 from prompt_transpiler.core.roles.diff import SemanticDiffAgent
 from prompt_transpiler.core.scoring import LLMAdjudicator, get_scoring_algorithm
+from prompt_transpiler.dto.models import Message, PromptPayload
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.store import JobStore
 from prompt_transpiler.jobs.util import run_coroutine_sync, utc_now_iso
@@ -158,7 +159,10 @@ def run_compile_job(job: JobRecord, registry: ModelRegistry) -> dict[str, Any]:
     final_score = getattr(candidate, "_cached_score", None)
     if final_score is None:
         source_model_obj = registry.get_model(source_model, source_provider)
-        original = OriginalPrompt(prompt=raw_prompt, model=source_model_obj)
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content=raw_prompt)]),
+            model=source_model_obj,
+        )
         final_score = candidate.total_score(scoring_algorithm, original)
 
     candidate.run_metadata = {

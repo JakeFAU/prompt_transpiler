@@ -5,7 +5,14 @@ from click.testing import CliRunner
 
 from prompt_transpiler.cli import _update_role_settings, main
 from prompt_transpiler.config import settings
-from prompt_transpiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_transpiler.dto.models import (
+    Message,
+    Model,
+    ModelProviderType,
+    PromptPayload,
+    PromptStyle,
+    Provider,
+)
 from prompt_transpiler.llm.prompts.prompt_objects import CandidatePrompt
 
 
@@ -39,7 +46,7 @@ def test_cli_no_args_shows_help(runner: CliRunner) -> None:
 def test_cli_with_text_input(mock_pipeline: AsyncMock, runner: CliRunner) -> None:
     # Setup mock to return a result
     mock_result = CandidatePrompt(
-        prompt="Optimized Prompt",
+        payload=PromptPayload(messages=[Message(role="user", content="Optimized Prompt")]),
         model=Model(
             provider=Provider(provider="gemini", provider_type=ModelProviderType.API),
             model_name="gemini-2.5",
@@ -86,7 +93,7 @@ def test_cli_with_text_input(mock_pipeline: AsyncMock, runner: CliRunner) -> Non
 @patch("prompt_transpiler.cli.transpile_pipeline", new_callable=AsyncMock)
 def test_cli_output_file(mock_pipeline: AsyncMock, runner: CliRunner, tmp_path) -> None:
     mock_result = CandidatePrompt(
-        prompt="Optimized Prompt Content",
+        payload=PromptPayload(messages=[Message(role="user", content="Optimized Prompt Content")]),
         model=Model(
             provider=Provider(provider="gemini", provider_type=ModelProviderType.API),
             model_name="gemini-2.5-flash",
@@ -123,13 +130,13 @@ def test_cli_output_file(mock_pipeline: AsyncMock, runner: CliRunner, tmp_path) 
 
     assert result.exit_code == 0
     assert output_file.exists()
-    assert output_file.read_text(encoding="utf-8") == "Optimized Prompt Content"
+    assert output_file.read_text(encoding="utf-8") == "user: Optimized Prompt Content"
 
 
 @patch("prompt_transpiler.cli.transpile_pipeline", new_callable=AsyncMock)
 def test_cli_report_json(mock_pipeline: AsyncMock, runner: CliRunner, tmp_path) -> None:
     mock_result = CandidatePrompt(
-        prompt="Optimized Prompt Content",
+        payload=PromptPayload(messages=[Message(role="user", content="Optimized Prompt Content")]),
         model=Model(
             provider=Provider(provider="gemini", provider_type=ModelProviderType.API),
             model_name="gemini-2.5-flash",
@@ -169,7 +176,7 @@ def test_cli_report_json(mock_pipeline: AsyncMock, runner: CliRunner, tmp_path) 
     assert result.exit_code == 0
     assert report_file.exists()
     report = report_file.read_text(encoding="utf-8")
-    assert '"transpiled_prompt": "Optimized Prompt Content"' in report
+    assert '"transpiled_prompt": "user: Optimized Prompt Content"' in report
     assert '"attempts": []' in report
     assert "Score Summary" in result.output
 

@@ -6,16 +6,27 @@ def test_registry_default_models():
     registry = ModelRegistry()
 
     # Test OpenAI
-    gpt4 = registry.get_model("gpt-4", "openai")
-    assert gpt4.model_name == "gpt-4"
-    assert gpt4.provider.provider == "openai"
-    assert gpt4.prompt_style == PromptStyle.MARKDOWN
+    gpt4o = registry.get_model("gpt-4o", "openai")
+    assert gpt4o.model_name == "gpt-4o"
+    assert gpt4o.provider.provider == "openai"
+    assert gpt4o.prompt_style == PromptStyle.MARKDOWN
+    assert gpt4o.supports_system_instructions is True
+    assert gpt4o.supports_structured_outputs is True
 
     # Test Gemini
-    gemini = registry.get_model("gemini-2.5-pro", "gemini")
-    assert gemini.model_name == "gemini-2.5-pro"
+    gemini = registry.get_model("gemini-2.0-flash", "gemini")
+    assert gemini.model_name == "gemini-2.0-flash"
     assert gemini.provider.provider == "gemini"
     assert gemini.prompt_style == PromptStyle.MARKDOWN
+    assert gemini.supports_system_instructions is True
+    assert gemini.supports_structured_outputs is True
+
+    # Test Claude (Anthropic)
+    claude = registry.get_model("claude-3-5-sonnet", "anthropic")
+    assert claude.model_name == "claude-3-5-sonnet"
+    assert claude.prompt_style == PromptStyle.XML
+    assert claude.supports_system_instructions is True
+    assert claude.supports_structured_outputs is False
 
 
 def test_registry_fallback():

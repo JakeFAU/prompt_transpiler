@@ -8,9 +8,12 @@ from prompt_transpiler.dto.models import (
     IntermediateRepresentationMetaSchema,
     IntermediateRepresentationSchema,
     IntermediateRepresentationSpecSchema,
+    Message,
     Model,
     ModelProviderType,
     ModelSchema,
+    PromptPayload,
+    PromptPayloadSchema,
     PromptStyle,
     Provider,
     ProviderSchema,
@@ -55,6 +58,8 @@ class TestModel:
         assert isinstance(model, Model)
         assert model.model_name == "gpt-4"
         assert model.prompt_style == PromptStyle.MARKDOWN
+        assert model.supports_system_instructions is True
+        assert model.supports_structured_outputs is False
         assert isinstance(model.provider, Provider)
 
     def test_model_serialization(self, model_obj, model_data):
@@ -122,3 +127,41 @@ class TestIntermediateRepresentation:
             schema.load(data)
         # Marshmallow nested validation errors are usually keyed by the field name
         assert "spec" in excinfo.value.messages
+
+
+class TestPromptPayload:
+    def test_prompt_payload_serialization(self):
+        payload = PromptPayload(
+            messages=[
+                Message(role="system", content="You are a helpful assistant."),
+                Message(role="user", content="Hello!"),
+            ],
+            response_format={"type": "json_object"},
+        )
+        schema = PromptPayloadSchema()
+        data = schema.dump(payload)
+        assert data["messages"][0]["role"] == "system"
+        assert data["messages"][0]["content"] == "You are a helpful assistant."
+        assert data["messages"][1]["role"] == "user"
+        assert data["messages"][1]["content"] == "Hello!"
+        assert data["response_format"]["type"] == "json_object"
+
+        loaded = schema.load(data)
+        assert isinstance(loaded, PromptPayload)
+        expected_count = 2
+        assert len(loaded.messages) == expected_count
+        assert loaded.messages[0].role == "system"
+        assert loaded.messages[0].content == "You are a helpful assistant."
+        assert loaded.messages[1].role == "user"
+        assert loaded.messages[1].content == "Hello!"
+        assert loaded.response_format == {"type": "json_object"}
+
+    def test_prompt_payload_full_text(self):
+        payload = PromptPayload(
+            messages=[
+                Message(role="system", content="You are a helpful assistant."),
+                Message(role="user", content="Hello!"),
+            ]
+        )
+        expected = "system: You are a helpful assistant.\nuser: Hello!"
+        assert payload.full_text == expected

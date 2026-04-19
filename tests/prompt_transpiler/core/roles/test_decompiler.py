@@ -7,8 +7,10 @@ from prompt_transpiler.core.exceptions import DecompilationError
 from prompt_transpiler.core.roles.decompiler import GeminiDecompiler
 from prompt_transpiler.dto.models import (
     LLMResponse,
+    Message,
     Model,
     ModelProviderType,
+    PromptPayload,
     PromptStyle,
     Provider,
     TokenUsage,
@@ -31,7 +33,14 @@ def mock_model():
 
 @pytest.fixture
 def mock_original_prompt(mock_model):
-    return OriginalPrompt(prompt="Original Prompt", model=mock_model)
+    payload = PromptPayload(
+        messages=[
+            Message(role="system", content="You are a helpful assistant."),
+            Message(role="user", content="Original Prompt"),
+        ],
+        response_format={"type": "json_object"},
+    )
+    return OriginalPrompt(payload=payload, model=mock_model)
 
 
 @pytest.mark.asyncio
@@ -60,6 +69,14 @@ async def test_decompiler_success(mock_original_prompt, mock_model):
         assert ir.spec.primary_intent == "intent"
         assert len(ir.data.few_shot_examples) == 1
         mock_provider.generate.assert_called_once()
+
+        # Verify call arguments
+        call_args = mock_provider.generate.call_args[1]
+        assert (
+            "system: You are a helpful assistant.\nuser: Original Prompt"
+            in call_args["user_prompt"]
+        )
+        assert "Response Format: {'type': 'json_object'}" in call_args["user_prompt"]
 
 
 @pytest.mark.asyncio

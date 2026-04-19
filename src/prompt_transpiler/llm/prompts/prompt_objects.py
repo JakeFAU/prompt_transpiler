@@ -6,31 +6,40 @@ from typing import Any
 import marshmallow as ma
 from attrs import define, field, validators
 
-from prompt_transpiler.dto.models import Model, ModelSchema
+from prompt_transpiler.dto.models import (
+    Model,
+    ModelSchema,
+    PromptPayload,
+    PromptPayloadSchema,
+)
 
 
 @define(kw_only=True)
 class OriginalPrompt:
     """Holds the original user prompt and optional intent."""
 
-    prompt: str = field(validator=validators.instance_of(str))
+    payload: PromptPayload = field(validator=validators.instance_of(PromptPayload))
     model: Model = field(validator=validators.instance_of(Model))
-    response_format: dict[str, Any] | None = field(
-        default=None, validator=validators.optional(validators.instance_of(dict))
-    )
     response: str | None = field(
         default=None, validator=validators.optional(validators.instance_of(str))
     )
+
+    @property
+    def prompt(self) -> str:
+        """Returns the full text of the payload for backward compatibility."""
+        return self.payload.full_text
+
+    @property
+    def response_format(self) -> dict[str, Any] | None:
+        """Returns the response format from the payload for backward compatibility."""
+        return self.payload.response_format
 
 
 class OriginalPromptSchema(ma.Schema):
     """Marshmallow schema for serializing and deserializing OriginalPrompt."""
 
-    prompt = ma.fields.Str(required=True)
+    payload = ma.fields.Nested(PromptPayloadSchema, required=True)
     model = ma.fields.Nested(ModelSchema, required=True)
-    response_format = ma.fields.Dict(
-        keys=ma.fields.Str(), values=ma.fields.Raw(), required=False, allow_none=True
-    )
     response = ma.fields.Str(required=False, allow_none=True)
 
     @ma.post_load
@@ -90,18 +99,54 @@ class CompilationAttempt:
     new_best: bool = field(default=False, validator=validators.instance_of(bool))
 
 
+class CompilationAttemptSchema(ma.Schema):
+    """Marshmallow schema for serializing and deserializing CompilationAttempt."""
+
+    attempt = ma.fields.Int(required=True)
+    final_score = ma.fields.Float(required=True)
+    primary_intent_score = ma.fields.Float(allow_none=True)
+    tone_voice_score = ma.fields.Float(allow_none=True)
+    constraint_scores = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Float(), allow_none=True
+    )
+    primary_intent_verdict = ma.fields.Str(allow_none=True)
+    tone_voice_verdict = ma.fields.Str(allow_none=True)
+    constraint_verdicts = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Str(), allow_none=True
+    )
+    primary_intent_confidence = ma.fields.Str(allow_none=True)
+    tone_voice_confidence = ma.fields.Str(allow_none=True)
+    constraint_confidences = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Str(), allow_none=True
+    )
+    feedback = ma.fields.Str(allow_none=True)
+    accepted = ma.fields.Bool(dump_default=False)
+    new_best = ma.fields.Bool(dump_default=False)
+
+    @ma.post_load
+    def make_attempt(self, data: dict[str, Any], **kwargs: Any) -> CompilationAttempt:
+        return CompilationAttempt(**data)
+
+
 @define(kw_only=True)
 class CandidatePrompt:
     """Holds a candidate prompt generated during transpilation."""
 
-    prompt: str = field(validator=validators.instance_of(str))
+    payload: PromptPayload = field(validator=validators.instance_of(PromptPayload))
     model: Model = field(validator=validators.instance_of(Model))
-    response_format: dict[str, Any] | None = field(
-        default=None, validator=validators.optional(validators.instance_of(dict))
-    )
     response: str | None = field(
         default=None, validator=validators.optional(validators.instance_of(str))
     )
+
+    @property
+    def prompt(self) -> str:
+        """Returns the full text of the payload for backward compatibility."""
+        return self.payload.full_text
+
+    @property
+    def response_format(self) -> dict[str, Any] | None:
+        """Returns the response format from the payload for backward compatibility."""
+        return self.payload.response_format
 
     # Component Scores (populated by Judge)
     primary_intent_score: float | None = field(
@@ -174,3 +219,39 @@ class CandidatePrompt:
         self._cached_algo_id = algo_id
 
         return score
+
+
+class CandidatePromptSchema(ma.Schema):
+    """Marshmallow schema for serializing and deserializing CandidatePrompt."""
+
+    payload = ma.fields.Nested(PromptPayloadSchema, required=True)
+    model = ma.fields.Nested(ModelSchema, required=True)
+    response = ma.fields.Str(allow_none=True)
+
+    # Component Scores
+    primary_intent_score = ma.fields.Float(allow_none=True)
+    tone_voice_score = ma.fields.Float(allow_none=True)
+    domain_context_score = ma.fields.Float(allow_none=True)
+    constraint_scores = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Float(), allow_none=True
+    )
+    primary_intent_verdict = ma.fields.Str(allow_none=True)
+    tone_voice_verdict = ma.fields.Str(allow_none=True)
+    constraint_verdicts = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Str(), allow_none=True
+    )
+    primary_intent_confidence = ma.fields.Str(allow_none=True)
+    tone_voice_confidence = ma.fields.Str(allow_none=True)
+    constraint_confidences = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Str(), allow_none=True
+    )
+
+    feedback = ma.fields.Str(allow_none=True)
+    diff_summary = ma.fields.Str(allow_none=True)
+
+    attempt_history = ma.fields.List(ma.fields.Nested(CompilationAttemptSchema), dump_default=list)
+    run_metadata = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Raw(), dump_default=dict)
+
+    @ma.post_load
+    def make_candidate_prompt(self, data: dict[str, Any], **kwargs: Any) -> CandidatePrompt:
+        return CandidatePrompt(**data)

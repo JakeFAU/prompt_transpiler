@@ -19,8 +19,10 @@ from prompt_transpiler.dto.models import (
     IntermediateRepresentationData,
     IntermediateRepresentationMeta,
     IntermediateRepresentationSpec,
+    Message,
     Model,
     ModelProviderType,
+    PromptPayload,
     PromptStyle,
     Provider,
 )
@@ -67,7 +69,10 @@ def mock_ir(mock_model):
 @pytest.fixture
 def mock_candidate_factory(mock_model):
     def _create():
-        candidate = CandidatePrompt(prompt="candidate", model=mock_model)
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="candidate")]),
+            model=mock_model,
+        )
         candidate.feedback = "feedback"
         return candidate
 
@@ -78,7 +83,10 @@ def mock_candidate_factory(mock_model):
 def mock_roles(mock_model, mock_ir, mock_candidate_factory):
     historian = MagicMock(spec=IHistorian)
     historian.establish_baseline = AsyncMock(
-        return_value=OriginalPrompt(prompt="original", model=mock_model)
+        return_value=OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="original")]),
+            model=mock_model,
+        )
     )
 
     decompiler = MagicMock(spec=IDecompiler)
@@ -122,7 +130,7 @@ async def test_pipeline_success(mock_roles, mock_model):
 
     result = await pipeline.run(raw_prompt="raw", source_model="gpt-4", target_model="gemini-pro")
 
-    assert result.prompt == "candidate"
+    assert result.prompt == "user: candidate"
     assert result.attempt_history[0].accepted is True
     assert result.run_metadata["scoring_algo"] == "pairwise"
     historian.establish_baseline.assert_called_once()
@@ -156,7 +164,7 @@ async def test_pipeline_retry_loop(mock_roles, mock_model):
 
     result = await pipeline.run(raw_prompt="raw", source_model="gpt-4", target_model="gemini-pro")
 
-    assert result.prompt == "candidate"
+    assert result.prompt == "user: candidate"
     assert len(result.attempt_history) == EXPECTED_RETRY_COUNT
     assert architect.design_prompt.call_count == EXPECTED_RETRY_COUNT
     assert pilot.test_candidate.call_count == EXPECTED_RETRY_COUNT
@@ -217,7 +225,7 @@ async def test_pipeline_max_retries_reached(mock_roles, mock_model):
 
     result = await pipeline.run(raw_prompt="raw", source_model="gpt-4", target_model="gemini-pro")
 
-    assert result.prompt == "candidate"
+    assert result.prompt == "user: candidate"
     assert architect.design_prompt.call_count == EXPECTED_RETRY_COUNT  # Initial + 1 retry
     diff_agent.summarize_diff.assert_called_once()
 

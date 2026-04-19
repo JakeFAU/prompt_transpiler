@@ -6,8 +6,10 @@ import pytest
 from prompt_transpiler.core.roles.diff import SemanticDiffAgent
 from prompt_transpiler.dto.models import (
     LLMResponse,
+    Message,
     Model,
     ModelProviderType,
+    PromptPayload,
     PromptStyle,
     Provider,
     TokenUsage,
@@ -49,8 +51,13 @@ async def test_diff_agent_success(mock_model):
         mock_get_provider.return_value = mock_provider
 
         agent = SemanticDiffAgent()
-        original = OriginalPrompt(prompt="Start", model=mock_model)
-        candidate = CandidatePrompt(prompt="End", model=mock_model)
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Start")]),
+            model=mock_model,
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="End")]), model=mock_model
+        )
 
         summary = await agent.summarize_diff(original, candidate)
 
@@ -70,8 +77,13 @@ async def test_diff_agent_invalid_json(mock_model):
         mock_get_provider.return_value = mock_provider
 
         agent = SemanticDiffAgent()
-        original = OriginalPrompt(prompt="Start", model=mock_model)
-        candidate = CandidatePrompt(prompt="End", model=mock_model)
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Start")]),
+            model=mock_model,
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="End")]), model=mock_model
+        )
 
         summary = await agent.summarize_diff(original, candidate)
 
@@ -87,8 +99,13 @@ async def test_diff_agent_failure(mock_model):
         mock_get_provider.return_value = mock_provider
 
         agent = SemanticDiffAgent()
-        original = OriginalPrompt(prompt="Start", model=mock_model)
-        candidate = CandidatePrompt(prompt="End", model=mock_model)
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Start")]),
+            model=mock_model,
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="End")]), model=mock_model
+        )
 
         summary = await agent.summarize_diff(original, candidate)
 
