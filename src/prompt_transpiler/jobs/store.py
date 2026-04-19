@@ -416,6 +416,7 @@ class MemoryJobStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[str, JobRecord] = {}
+        self._queued_job_ids: dict[str, None] = {}
 
     def create_job(self, request: dict[str, Any]) -> str:
         """Create a new job record and return its identifier."""
@@ -437,6 +438,7 @@ class MemoryJobStore:
                 "cancel_requested": False,
                 "worker_id": None,
             }
+            self._queued_job_ids[job_id] = None
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
@@ -456,14 +458,20 @@ class MemoryJobStore:
             job.update(cast(JobRecord, fields))
             job["updated_at"] = utc_now_iso()
 
+            if "status" in fields:
+                if fields["status"] == JobStatus.QUEUED.value:
+                    self._queued_job_ids[job_id] = None
+                else:
+                    self._queued_job_ids.pop(job_id, None)
+
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
         """Claim the next queued job for a worker."""
         with self._lock:
-            queued = [job for job in self._jobs.values() if job["status"] == JobStatus.QUEUED.value]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            if not queued:
+            if not self._queued_job_ids:
                 return None
-            queued.sort(key=lambda job: job["created_at"])  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            job = queued[0]
+            job_id = next(iter(self._queued_job_ids))
+            self._queued_job_ids.pop(job_id)
+            job = self._jobs[job_id]
             now = utc_now_iso()
             job["status"] = JobStatus.RUNNING.value
             job["started_at"] = now
@@ -509,6 +517,7 @@ class MemoryJobStore:
             ]
             for job_id in to_delete:
                 self._jobs.pop(job_id, None)
+                self._queued_job_ids.pop(job_id, None)
             return len(to_delete)
 
     def close(self) -> None:
