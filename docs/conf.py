@@ -4,7 +4,7 @@ import sys
 # 1. Path Setup: Point to the 'src' root so imports work
 sys.path.insert(0, os.path.abspath("../src"))
 
-project = "Prompt Compiler"
+project = "Prompt Transpiler"
 copyright = "2025, Jacob Bourne"
 author = "Jacob Bourne"
 release = "0.1.0"
@@ -25,7 +25,7 @@ napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = True  # Document __init__ if it has a docstring
 
 html_theme = "furo"
-html_title = "Prompt Compiler Documentation"
+html_title = "Prompt Transpiler Documentation"
 
 # 5. Mapping for Intersphinx (Auto-link to external docs)
 intersphinx_mapping = {

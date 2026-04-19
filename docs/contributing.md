@@ -1,6 +1,6 @@
-# Contributing to prompt-compiler
+# Contributing to prompt-transpiler
 
-Thank you for your interest in contributing to prompt-compiler!
+Thank you for your interest in contributing to prompt-transpiler!
 
 ## Development Setup
 
@@ -22,7 +22,7 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management and
 3. **Run commands in the project environment:**
 
     ```bash
-    uv run prompt-compiler --help
+    uv run prompt-transpiler --help
     ```
 
 ## Running Tests

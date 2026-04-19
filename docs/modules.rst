@@ -1,7 +1,7 @@
-prompt_compiler
+prompt_transpiler
 ===============
 
 .. toctree::
    :maxdepth: 4
 
-   prompt_compiler
+   prompt_transpiler

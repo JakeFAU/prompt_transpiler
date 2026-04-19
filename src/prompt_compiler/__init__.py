@@ -1,5 +1,11 @@
-"""
-Prompt Compiler Package.
+"""Compatibility alias for the legacy `prompt_compiler` package name."""
 
-This package provides tools for compiling and managing prompts for various AI models.
-"""
+import sys
+from importlib import import_module
+
+_pkg = import_module("prompt_transpiler")
+
+globals().update(_pkg.__dict__)
+__path__ = list(_pkg.__path__)
+
+sys.modules[__name__] = _pkg

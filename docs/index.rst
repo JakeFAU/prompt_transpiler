@@ -1,6 +1,6 @@
-.. prompt-compiler documentation master file.
+.. prompt-transpiler documentation master file.
 
-Prompt Compiler Documentation
+Prompt Transpiler Documentation
 =============================
 
 A deterministic framework for treating LLM prompts as compiled code artifacts.
