@@ -147,9 +147,9 @@ class PromptTranspilerPipeline:
         }
 
     @telemetry.instrument(name="pipeline.transpile")
-    async def run(  # noqa: PLR0915, PLR0913
+    async def run(  # noqa: PLR0915, PLR0913, PLR0912
         self,
-        raw_prompt: str,
+        raw_prompt: str | PromptPayload,
         source_model: str,
         target_model: str,
         max_retries: int | None = None,
@@ -160,7 +160,7 @@ class PromptTranspilerPipeline:
         Execute the prompt transpilation pipeline.
 
         Args:
-            raw_prompt: The original prompt text to be converted.
+            raw_prompt: The original prompt text or PromptPayload to be converted.
             source_model: Name of the model the original prompt was designed for (e.g., 'gpt-4').
             target_model: Name of the model to optimize for (e.g., 'gemini-2.5-pro').
             max_retries: Optional override for maximum optimization attempts.
@@ -185,8 +185,13 @@ class PromptTranspilerPipeline:
             src_model_obj = self.registry.get_model(source_model, source_provider)
             tgt_model_obj = self.registry.get_model(target_model, target_provider)
 
+            if isinstance(raw_prompt, str):
+                payload = PromptPayload(messages=[Message(role="user", content=raw_prompt)])
+            else:
+                payload = raw_prompt
+
             original = OriginalPrompt(
-                payload=PromptPayload(messages=[Message(role="user", content=raw_prompt)]),
+                payload=payload,
                 model=src_model_obj,
             )
 
@@ -307,7 +312,7 @@ class PromptTranspilerPipeline:
 
 
 async def transpile_pipeline(  # noqa: PLR0913
-    raw_text: str,
+    raw_text: str | PromptPayload,
     source_model_name: str,
     target_model_name: str,
     source_provider: str = "openai",

@@ -2,18 +2,18 @@
 
 import asyncio
 import json
-import logging
 import sys
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as get_version
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import click
 
 from prompt_transpiler.config import settings
 from prompt_transpiler.core.pipeline import transpile_pipeline
 from prompt_transpiler.core.registry import ModelRegistry
+from prompt_transpiler.dto.models import PromptPayload, PromptPayloadSchema
 from prompt_transpiler.reporting import build_transpile_report
 from prompt_transpiler.utils.logging import get_logger
 from prompt_transpiler.utils.token_collector import token_collector
@@ -73,7 +73,7 @@ def _update_role_settings(  # noqa: PLR0913
         settings.update(updates, merge=True)
 
 
-def _load_prompt(prompt_input: str, logger: logging.Logger) -> str | None:
+def _load_prompt(prompt_input: str) -> str | PromptPayload | None:
     """Load prompt from input string or file."""
     # Check if input is a file path that exists
     prompt_path = Path(prompt_input)
@@ -82,18 +82,28 @@ def _load_prompt(prompt_input: str, logger: logging.Logger) -> str | None:
     # are usually prioritized.
     if prompt_path.is_file():
         try:
+            if prompt_path.suffix.lower() == ".json":
+                with prompt_path.open("r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    payload = cast(PromptPayload, PromptPayloadSchema().load(data))
+                    logger.info(
+                        "Loaded prompt payload from JSON file",
+                        path=str(prompt_path),
+                    )
+                    return payload
+
             raw_text = prompt_path.read_text(encoding="utf-8")
             logger.info(
                 "Loaded prompt from file",
-                path=str(prompt_path),  # pyright: ignore[reportCallIssue]
-            )  # type: ignore[call-arg]
+                path=str(prompt_path),
+            )
             return raw_text
         except Exception as e:
             logger.error(
                 "Failed to read prompt file",
-                path=str(prompt_path),  # pyright: ignore[reportCallIssue]
-                error=str(e),  # pyright: ignore[reportCallIssue]
-            )  # type: ignore[call-arg]
+                path=str(prompt_path),
+                error=str(e),
+            )
             click.echo(f"Error reading file: {e}", err=True)
             return None
     else:
@@ -242,6 +252,11 @@ def _build_cli_report(
     help="Write a machine-readable JSON report with scores, metadata, and attempts.",
 )
 @click.option(
+    "--output-json",
+    is_flag=True,
+    help="Output the entire transpiled payload as JSON.",
+)
+@click.option(
     "--source",
     "-s",
     default="gpt-4o-mini",
@@ -345,6 +360,7 @@ def main(  # noqa: PLR0913, PLR0915
     prompt_input: str | None,
     output: Path | None,
     report_json: Path | None,
+    output_json: bool,
     source: str,
     target: str,
     source_provider: str,
@@ -414,7 +430,7 @@ def main(  # noqa: PLR0913, PLR0915
         click.echo(ctx.get_help())
         sys.exit(0)
 
-    raw_text = _load_prompt(prompt_input, logger)  # type: ignore[arg-type]
+    raw_text = _load_prompt(prompt_input)
     if raw_text is None:
         sys.exit(1)
 
@@ -427,7 +443,7 @@ def main(  # noqa: PLR0913, PLR0915
     usage_before = _token_usage_snapshot()
 
     # 4. Run Pipeline
-    async def run_async() -> None:
+    async def run_async() -> None:  # noqa: PLR0912
         try:
             result = await transpile_pipeline(
                 raw_text,
@@ -468,14 +484,27 @@ def main(  # noqa: PLR0913, PLR0915
                     click.echo(f"Report JSON saved to: {report_json}")
 
             # 5. Handle Output
-            if output:
+            if output_json:
+                payload_json = PromptPayloadSchema().dumps(result.payload, indent=2)
+                click.echo(payload_json)
+            elif output:
                 output.write_text(result.prompt, encoding="utf-8")
                 if not quiet:
                     click.echo(f"Transpiled prompt saved to: {output}")
             else:
                 if not quiet:
                     click.echo("\n--- Transpiled Prompt ---\n")
-                click.echo(result.prompt)
+
+                # Format for terminal: role: content
+                for msg in result.payload.messages:
+                    role_label = msg.role.capitalize()
+                    click.echo(f"{role_label}: {msg.content}")
+
+                if result.payload.response_format:
+                    click.echo(
+                        f"\nResponse Format: {json.dumps(result.payload.response_format, indent=2)}"
+                    )
+
                 if not quiet:
                     click.echo("\n-----------------------\n")
 
