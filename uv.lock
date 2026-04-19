@@ -6,17 +6,6 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
-[manifest]
-members = [
-    "3-13",
-    "prompt-transpiler",
-]
-
-[[package]]
-name = "3-13"
-version = "0.1.0"
-source = { virtual = "3.13" }
-
 [[package]]
 name = "accessible-pygments"
 version = "0.0.5"
