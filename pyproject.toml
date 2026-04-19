@@ -28,6 +28,7 @@ dependencies = [
     "opentelemetry-instrumentation-openai>=0.60.0",
     "opentelemetry-instrumentation-anthropic>=0.60.0",
     "traceAI-smolagents>=0.1.5",
+    "duckdb>=1.5.2",
 ]
 
 [project.scripts]
