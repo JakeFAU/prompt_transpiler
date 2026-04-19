@@ -137,6 +137,7 @@ class TelemetryManager:
 
         return self._meter.create_counter(name, description=description, unit=unit)
 
+
 class _NoOpCounter:
     """Dummy counter for when telemetry is disabled."""
 
