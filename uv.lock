@@ -9,7 +9,7 @@ resolution-markers = [
 [manifest]
 members = [
     "3-13",
-    "prompt-complier",
+    "prompt-compiler",
 ]
 
 [[package]]
@@ -1565,7 +1565,7 @@ wheels = [
 ]
 
 [[package]]
-name = "prompt-complier"
+name = "prompt-compiler"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -1604,7 +1604,10 @@ dev = [
     { name = "sphinx-copybutton" },
 ]
 docs = [
+    { name = "furo" },
+    { name = "myst-parser" },
     { name = "sphinx" },
+    { name = "sphinx-copybutton" },
     { name = "sphinx-rtd-theme" },
 ]
 test = [
@@ -1626,6 +1629,7 @@ requires-dist = [
     { name = "dynaconf", specifier = ">=3.2.0" },
     { name = "flask", specifier = ">=3.1.0" },
     { name = "furo", marker = "extra == 'dev'" },
+    { name = "furo", marker = "extra == 'docs'" },
     { name = "google-genai", specifier = ">=1.73.0" },
     { name = "gunicorn", specifier = ">=25.0.0" },
     { name = "huggingface-hub", specifier = ">=1.1.0" },
@@ -1634,6 +1638,7 @@ requires-dist = [
     { name = "marshmallow-enum", specifier = ">=1.5.1" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "myst-parser", marker = "extra == 'dev'" },
+    { name = "myst-parser", marker = "extra == 'docs'" },
     { name = "openai", specifier = ">=2.3.0" },
     { name = "opentelemetry-api", specifier = ">=1.41.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.41.0" },
@@ -1651,6 +1656,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "sphinx", marker = "extra == 'docs'" },
     { name = "sphinx-copybutton", marker = "extra == 'dev'" },
+    { name = "sphinx-copybutton", marker = "extra == 'docs'" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'" },
     { name = "structlog", specifier = ">=25.5.0,<26.0.0" },
     { name = "tox", marker = "extra == 'test'" },

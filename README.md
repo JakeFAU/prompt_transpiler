@@ -4,6 +4,8 @@
 
 A specialized transpiler that converts LLM prompts into model-specific formats (Intermediate Representation -> Optimized Output). It solves the "Prompt Drift" problem where a prompt optimized for GPT-4 fails on Gemini or Claude.
 
+This project is currently **alpha**. The APIs and scoring internals are still evolving, but the CLI, API, and core pipeline are stable enough for early adopters and contributors.
+
 ## 🏗 Architecture
 
 The system operates like a standard compiler toolchain with specialized agents:
@@ -34,17 +36,25 @@ The system operates like a standard compiler toolchain with specialized agents:
 
 ## 📦 Installation
 
-This project uses [uv](https://docs.astral.sh/uv/) for dependency management and requires **Python 3.13+**.
+This project uses [uv](https://docs.astral.sh/uv/) and requires **Python 3.13+**.
+
+### Install from PyPI
 
 ```bash
-# Clone the repo
-git clone git@github.com:UKGEPIC/ds-prompt-compiler.git
+uv pip install prompt-compiler
+
+# CLI
+uv run prompt-compiler --help
+```
+
+### Install from source
+
+```bash
+git clone git@github.com:JakeFAU/prompt_transpiler.git
 cd prompt_transpiler
 
-# Install dependencies
 uv sync --extra dev --extra test
 
-# Run commands inside the project environment
 uv run prompt-compiler --help
 ```
 
@@ -278,3 +288,5 @@ src/prompt_compiler/
 2. Create a feature branch.
 3. Ensure `pre-commit` passes (Ruff + Mypy).
 4. Submit a PR.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for contributor and disclosure expectations.

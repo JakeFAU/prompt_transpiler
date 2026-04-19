@@ -20,7 +20,7 @@ from prompt_compiler.utils.token_collector import token_collector
 def _get_version() -> str:
     """Get the package version, falling back to VERSION.txt if not installed."""
     try:
-        return get_version("prompt-complier")
+        return get_version("prompt-compiler")
     except PackageNotFoundError:
         # Fallback for when package is not installed (e.g., CI/CD, development)
         version_file = Path(__file__).parent.parent.parent / "VERSION.txt"

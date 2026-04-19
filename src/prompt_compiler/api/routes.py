@@ -247,7 +247,7 @@ def _get_registry() -> ModelRegistry:
 
 def _get_version() -> str:
     try:
-        return get_version("prompt-complier")
+        return get_version("prompt-compiler")
     except PackageNotFoundError:
         version_file = Path(__file__).parent.parent.parent.parent / "VERSION.txt"
         if version_file.exists():
