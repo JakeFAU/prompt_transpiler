@@ -432,15 +432,23 @@ class PromptPayload:
         response_format (dict[str, Any] | None): The desired format of the response.
     """
 
-    messages: list[Message] = field(factory=list, validator=validators.instance_of(list))
-    response_format: dict[str, Any] | None = field(default=None)
+    messages: list[Message] = field(
+        factory=list,
+        validator=validators.deep_iterable(
+            member_validator=validators.instance_of(Message),
+            iterable_validator=validators.instance_of(list),
+        ),
+    )
+    response_format: dict[str, Any] | None = field(
+        default=None, validator=validators.optional(validators.instance_of(dict))
+    )
 
     @property
     def full_text(self) -> str:
         """
         Returns a single string representation of all messages.
         """
-        return "\n".join([f"{m.role}: {m.content}" for m in self.messages])
+        return "\n".join(f"{m.role}: {m.content}" for m in self.messages)
 
 
 class PromptPayloadSchema(ma.Schema):
@@ -452,5 +460,5 @@ class PromptPayloadSchema(ma.Schema):
     response_format = ma.fields.Dict(allow_none=True)
 
     @ma.post_load
-    def make_payload(self, data: dict[str, Any], **kwargs: Any) -> PromptPayload:
+    def make_prompt_payload(self, data: dict[str, Any], **kwargs: Any) -> PromptPayload:
         return PromptPayload(**data)

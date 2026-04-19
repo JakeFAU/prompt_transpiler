@@ -140,8 +140,8 @@ class TestPromptPayload:
         data = schema.dump(payload)
         assert data["messages"][0]["role"] == "system"
         assert data["messages"][0]["content"] == "You are a helpful assistant."
-        assert data["messages"][1].get("role") == "user"
-        assert data["messages"][1].get("content") == "Hello!"
+        assert data["messages"][1]["role"] == "user"
+        assert data["messages"][1]["content"] == "Hello!"
         assert data["response_format"]["type"] == "json_object"
 
         loaded = schema.load(data)
