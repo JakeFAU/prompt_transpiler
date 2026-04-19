@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from prompt_transpiler.dto.models import Message, PromptPayload
@@ -167,8 +169,6 @@ def test_build_compile_report_alias():
 
 
 def test_build_transpile_report_fallback(model_obj):
-    from unittest.mock import MagicMock
-
     mock_candidate = MagicMock()
     mock_candidate.attempt_history = "not a list"
     mock_candidate.run_metadata = "not a dict"
