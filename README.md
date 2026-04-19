@@ -1,8 +1,10 @@
-# Prompt Compiler (Transpiler)
+# Prompt Transpiler
 
-> **Don't rewrite prompts. Compile them.**
+> **Don't rewrite prompts. Transpile them.**
 
 A specialized transpiler that converts LLM prompts into model-specific formats (Intermediate Representation -> Optimized Output). It solves the "Prompt Drift" problem where a prompt optimized for GPT-4 fails on Gemini or Claude.
+
+This project is currently **alpha**. The APIs and scoring internals are still evolving, but the CLI, API, and core pipeline are stable enough for early adopters and contributors.
 
 ## 🏗 Architecture
 
@@ -28,29 +30,38 @@ The system operates like a standard compiler toolchain with specialized agents:
 * **Model Agnostic IR:** Breaks prompts down into `Intent`, `Constraints`, `Context`, and `DataSchema`.
 * **Multi-Agent Pipeline:** Specialized agents (Decompiler, Architect, Judge, Pilot, Historian) collaborate for optimal results.
 * **Strict Output Enforcement:** Handles the nuances of `response_format={"type": "json_schema"}` (OpenAI) vs `response_mime_type` (Gemini) vs Prefill-Injection (Claude).
-* **Telemetry Native:** Built-in OpenTelemetry support for tracing prompt compilation pipelines.
-* **Configurable Scoring:** Weighted scoring algorithm with customizable thresholds and retry logic.
+* **Telemetry Native:** Built-in OpenTelemetry support for tracing prompt transpilation pipelines.
+* **Configurable Scoring:** Pairwise judge-by-comparison is the default, with optional alternative scoring algorithms and retry logic.
+* **Inspectable Runs:** Optional CLI score summaries and JSON reports include final scores, per-attempt history, token usage, and effective runtime settings.
 * **Fail-Fast Config:** Validates API keys and provider availability at startup via Dynaconf.
 
 ## 📦 Installation
 
-This project uses [uv](https://docs.astral.sh/uv/) for dependency management and requires **Python 3.13+**.
+This project uses [uv](https://docs.astral.sh/uv/) and requires **Python 3.13+**.
+
+### Install from PyPI
 
 ```bash
-# Clone the repo
-git clone git@github.com:UKGEPIC/ds-prompt-compiler.git
+uv pip install prompt-transpiler
+
+# CLI
+uv run prompt-transpiler --help
+```
+
+### Install from source
+
+```bash
+git clone git@github.com:JakeFAU/prompt_transpiler.git
 cd prompt_transpiler
 
-# Install dependencies
 uv sync --extra dev --extra test
 
-# Run commands inside the project environment
-uv run prompt-compiler --help
+uv run prompt-transpiler --help
 ```
 
 ## 🛠 Configuration
 
-Create a `.secrets.toml` file or set environment variables (prefixed with `PRCOMP_`):
+Create a `.secrets.toml` file or set environment variables (prefixed with `PRTRANS_`):
 
 ```bash
 # .secrets.toml
@@ -64,10 +75,10 @@ HUGGINGFACE_API_KEY = "hf_..."
 Or via environment variables:
 
 ```bash
-export PRCOMP_OPENAI_API_KEY=sk-...
-export PRCOMP_GEMINI_API_KEY=...
-export PRCOMP_ANTHROPIC_API_KEY=sk-ant-...
-export PRCOMP_HUGGINGFACE_API_KEY=hf_...
+export PRTRANS_OPENAI_API_KEY=sk-...
+export PRTRANS_GEMINI_API_KEY=...
+export PRTRANS_ANTHROPIC_API_KEY=sk-ant-...
+export PRTRANS_HUGGINGFACE_API_KEY=hf_...
 ```
 
 ### Configuration Options
@@ -75,10 +86,11 @@ export PRCOMP_HUGGINGFACE_API_KEY=hf_...
 The `settings.toml` file controls pipeline behavior:
 
 ```toml
-[default.compiler]
+[default.transpiler]
 MAX_RETRIES = 3           # Maximum optimization attempts
 SCORE_THRESHOLD = 0.8     # Minimum score to accept a prompt
 EARLY_STOP_PATIENCE = 1   # Retries without improvement before stopping
+SCORING_ALGORITHM = "pairwise"
 
 [default.roles.architect]
 PROVIDER = "openai"
@@ -98,35 +110,43 @@ MODEL = "gpt-4o"
 ### CLI
 
 ```bash
-# Basic usage: compile a prompt from one model to another
-prompt-compiler "Extract the stock tickers from this text and give me JSON." \
+# Basic usage: transpile a prompt from one model to another
+prompt-transpiler "Extract the stock tickers from this text and give me JSON." \
     --source gpt-4o-mini \
     --target gemini-2.5-flash
 
-# The CLI will also print a semantic explanation of how the compiled prompt differs
+# The CLI will also print a semantic explanation of how the transpiled prompt differs
 # from the original (diff agent). Disable with --quiet if you only want the prompt.
 
-# Compile from a file
-prompt-compiler ./my_prompt.txt -s gpt-4o -t gemini-2.5-pro
+# Transpile from a file
+prompt-transpiler ./my_prompt.txt -s gpt-4o -t gemini-2.5-pro
 
 # Save output to file
-prompt-compiler "Your prompt here" -o compiled_prompt.txt
+prompt-transpiler "Your prompt here" -o transpiled_prompt.txt
 
 # Override agent models
-prompt-compiler "Your prompt" \
+prompt-transpiler "Your prompt" \
     --architect-provider openai \
     --architect-model gpt-4o \
     --decompiler-provider gemini \
     --decompiler-model gemini-2.5-flash
 
 # Adjust optimization parameters
-prompt-compiler "Your prompt" --max-retries 5 --score-threshold 0.9
+prompt-transpiler "Your prompt" --max-retries 5 --score-threshold 0.9
+
+# Override the default pairwise scoring strategy if needed
+prompt-transpiler "Your prompt" --scoring-algo weighted
+
+# Print a score summary and save a detailed machine-readable report
+prompt-transpiler "Your prompt" \
+    --show-scores \
+    --report-json transpile-report.json
 
 # Verbose output
-prompt-compiler "Your prompt" -v
+prompt-transpiler "Your prompt" -v
 
 # Disable telemetry
-prompt-compiler "Your prompt" --no-telemetry
+prompt-transpiler "Your prompt" --no-telemetry
 ```
 
 ### REST API
@@ -135,10 +155,10 @@ Run the API server from the project root:
 
 ```bash
 # Local dev
-prompt-compiler-api
+prompt-transpiler-api
 
 # Or with gunicorn
-gunicorn -b 0.0.0.0:${PORT:-8080} prompt_compiler.api.app:app
+gunicorn -b 0.0.0.0:${PORT:-8080} prompt_transpiler.api.app:app
 ```
 
 Docs:
@@ -152,7 +172,7 @@ Environment variables:
 * `HOST` (default `0.0.0.0`)
 * `PORT` (default `8080`)
 * `JOB_STORE` (`duckdb|sqlite|memory`, default `duckdb`)
-* `JOB_DB_PATH` (default `/tmp/prompt_compiler_jobs.duckdb`)
+* `JOB_DB_PATH` (default `/tmp/prompt_transpiler_jobs.duckdb`)
 * `JOB_RETENTION_HOURS` (default `24`)
 * `WORKER_ENABLED` (default `true`)
 * `WORKER_POLL_INTERVAL_MS` (default `500`)
@@ -162,8 +182,8 @@ Environment variables:
 Example API flow:
 
 ```bash
-# Enqueue a compile job
-curl -X POST http://localhost:8080/v1/compile-jobs \\
+# Enqueue a transpile job
+curl -X POST http://localhost:8080/v1/transpile-jobs \\
   -H "Content-Type: application/json" \\
   -d '{
     "raw_prompt": "Summarize this text into a bullet list.",
@@ -172,42 +192,43 @@ curl -X POST http://localhost:8080/v1/compile-jobs \\
   }'
 
 # Check status
-curl http://localhost:8080/v1/compile-jobs/<job_id>
+curl http://localhost:8080/v1/transpile-jobs/<job_id>
 
 # Fetch result
-curl http://localhost:8080/v1/compile-jobs/<job_id>/result
+curl http://localhost:8080/v1/transpile-jobs/<job_id>/result
 ```
 
 ### As a Library
 
 ```python
-from prompt_compiler.core.pipeline import compile_pipeline
+from prompt_transpiler.core.pipeline import transpile_pipeline
 
 async def main():
     raw_prompt = "Extract the stock tickers from this text and give me JSON."
 
-    result = await compile_pipeline(
+    result = await transpile_pipeline(
         raw_prompt,
-        source_model="gpt-4o-mini",
-        target_model="gemini-2.5-flash",
+        source_model_name="gpt-4o-mini",
+        target_model_name="gemini-2.5-flash",
         source_provider="openai",
         target_provider="gemini",
         max_retries=3,
         score_threshold=0.8,
     )
 
-    print(f"Compiled Prompt:\n{result.prompt}")
+    print(f"Transpiled Prompt:\n{result.prompt}")
+    print(f"Attempts Recorded: {len(result.attempt_history)}")
 ```
 
 ### Advanced: Custom Pipeline
 
 ```python
-from prompt_compiler.core.pipeline import PromptCompilerPipeline
-from prompt_compiler.core.registry import ModelRegistry
+from prompt_transpiler.core.pipeline import PromptTranspilerPipeline
+from prompt_transpiler.core.registry import ModelRegistry
 
 async def main():
     # Create pipeline with custom settings
-    pipeline = PromptCompilerPipeline(
+    pipeline = PromptTranspilerPipeline(
         score_threshold=0.85,
         max_retries=5,
         early_stop_patience=2,
@@ -231,7 +252,7 @@ We enforce strict typing and code quality.
 uv run pytest
 
 # Run specific tests
-uv run pytest tests/prompt_compiler/core/test_pipeline.py
+uv run pytest tests/prompt_transpiler/core/test_pipeline.py
 
 # Run type checks (Strict Mode)
 uv run mypy .
@@ -246,7 +267,7 @@ uv run pre-commit run --all-files
 ## 📁 Project Structure
 
 ```bash
-src/prompt_compiler/
+src/prompt_transpiler/
 ├── cli.py              # Command-line interface
 ├── config.py           # Dynaconf configuration loader
 ├── core/
@@ -278,3 +299,5 @@ src/prompt_compiler/
 2. Create a feature branch.
 3. Ensure `pre-commit` passes (Ruff + Mypy).
 4. Submit a PR.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for contributor and disclosure expectations.

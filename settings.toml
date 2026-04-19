@@ -49,8 +49,14 @@ MODEL = "gpt-4o-mini"
 PROVIDER = "openai"
 MODEL = "gpt-4o-mini"
 
-[default.compiler]
+[default.transpiler]
 MAX_RETRIES = 3
 SCORE_THRESHOLD = 0.8
 EARLY_STOP_PATIENCE = 1       # Number of retries without improvement before stopping
-SCORING_ALGORITHM = "dynamic"
+SCORING_ALGORITHM = "pairwise"
+
+[default.compiler]
+MAX_RETRIES = 3
+SCORE_THRESHOLD = 0.8
+EARLY_STOP_PATIENCE = 1
+SCORING_ALGORITHM = "pairwise"

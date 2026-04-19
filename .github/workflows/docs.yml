@@ -36,7 +36,7 @@ jobs:
 
       - name: Build documentation
         run: |
-          uv run sphinx-apidoc -f -o docs/ ./src/prompt_compiler
+          uv run sphinx-apidoc -f -o docs/ ./src/prompt_transpiler
           uv run sphinx-build -b html docs/ docs/_build/html
 
       # MODERN STEP 1: Upload the build result as an artifact

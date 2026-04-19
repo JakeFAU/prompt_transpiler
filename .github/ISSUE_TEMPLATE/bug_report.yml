@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible defect in Prompt Transpiler.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the exact prompt, command, API payload, or code sample needed to reproduce the issue.
+      placeholder: |
+        1. Run `prompt-transpiler ...`
+        2. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Paste stack traces, stderr, report JSON excerpts, or screenshots if relevant.
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Which Prompt Transpiler version are you using?
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.13.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Providers involved
+      multiple: true
+      options:
+        - OpenAI
+        - Gemini
+        - Anthropic
+        - Hugging Face
+        - Other

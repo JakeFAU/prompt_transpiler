@@ -1,6 +1,6 @@
-# Contributing to prompt-compiler
+# Contributing to prompt-transpiler
 
-Thank you for your interest in contributing to prompt-compiler!
+Thank you for your interest in contributing to prompt-transpiler!
 
 ## Development Setup
 
@@ -9,8 +9,8 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management and
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/yourusername/prompt-compiler.git
-    cd prompt-compiler
+    git clone https://github.com/JakeFAU/prompt_transpiler.git
+    cd prompt_transpiler
     ```
 
 2. **Install dependencies:**
@@ -22,7 +22,7 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management and
 3. **Run commands in the project environment:**
 
     ```bash
-    uv run prompt-compiler --help
+    uv run prompt-transpiler --help
     ```
 
 ## Running Tests
@@ -61,6 +61,5 @@ Documentation is built using Sphinx. To build the docs locally:
 
 ```bash
 uv sync --extra docs
-cd docs
-uv run sphinx-build -b html . _build/html
+uv run sphinx-build -b html docs docs/_build/html
 ```

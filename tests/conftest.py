@@ -1,6 +1,6 @@
 import pytest
 
-from prompt_compiler.dto.models import (
+from prompt_transpiler.dto.models import (
     Model,
     ModelProviderType,
     PromptStyle,

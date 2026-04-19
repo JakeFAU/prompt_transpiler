@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
@@ -34,4 +34,4 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          uv run pytest --cov=prompt_compiler --cov-report=xml --cov-fail-under=85
+          uv run pytest --cov=prompt_transpiler --cov-report=xml --cov-fail-under=85
