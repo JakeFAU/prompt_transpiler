@@ -6,8 +6,10 @@ from prompt_transpiler.core.exceptions import ProviderError
 from prompt_transpiler.core.roles.historian import DefaultHistorian
 from prompt_transpiler.dto.models import (
     LLMResponse,
+    Message,
     Model,
     ModelProviderType,
+    PromptPayload,
     PromptStyle,
     Provider,
     TokenUsage,
@@ -38,7 +40,10 @@ async def test_historian_success(mock_model):
         mock_get_provider.return_value = mock_provider
 
         historian = DefaultHistorian()
-        original_prompt = OriginalPrompt(prompt="Prompt", model=mock_model)
+        original_prompt = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Prompt")]),
+            model=mock_model,
+        )
 
         result = await historian.establish_baseline(original_prompt)
 
@@ -54,7 +59,10 @@ async def test_historian_failure(mock_model):
         mock_get_provider.return_value = mock_provider
 
         historian = DefaultHistorian()
-        original_prompt = OriginalPrompt(prompt="Prompt", model=mock_model)
+        original_prompt = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Prompt")]),
+            model=mock_model,
+        )
 
         with pytest.raises(ProviderError, match="Failed to get baseline"):
             await historian.establish_baseline(original_prompt)

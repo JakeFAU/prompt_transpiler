@@ -5,6 +5,7 @@ from typing import Any, cast
 from prompt_transpiler.core.pipeline import PromptTranspilerPipeline
 from prompt_transpiler.core.registry import ModelRegistry
 from prompt_transpiler.core.scoring import get_scoring_algorithm
+from prompt_transpiler.dto.models import Message, PromptPayload
 from prompt_transpiler.jobs.service import run_compile_job
 from prompt_transpiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
@@ -20,7 +21,10 @@ def test_run_compile_job_builds_response(monkeypatch):
     source_model = registry.get_model(source_model_name)
     target_model = registry.get_model(target_model_name)
 
-    candidate = CandidatePrompt(prompt="compiled", model=target_model)
+    candidate = CandidatePrompt(
+        payload=PromptPayload(messages=[Message(role="user", content="compiled")]),
+        model=target_model,
+    )
     candidate.primary_intent_score = 0.9
     candidate.tone_voice_score = 0.8
     candidate.constraint_scores = {"rule": 0.95}
@@ -40,7 +44,9 @@ def test_run_compile_job_builds_response(monkeypatch):
     ]
 
     algo = get_scoring_algorithm("weighted")
-    original = OriginalPrompt(prompt="raw", model=source_model)
+    original = OriginalPrompt(
+        payload=PromptPayload(messages=[Message(role="user", content="raw")]), model=source_model
+    )
     candidate.total_score(algo, original)
 
     async def fake_run(
@@ -64,7 +70,7 @@ def test_run_compile_job_builds_response(monkeypatch):
     }
 
     result = run_compile_job(cast(Any, job), registry)
-    assert result["transpiled_prompt"] == "compiled"
+    assert result["transpiled_prompt"] == "user: compiled"
     assert result["scores"]["final_score"] is not None
     assert result["models"]["source_model"]["model_name"] == source_model_name
     assert result["models"]["target_model"]["model_name"] == target_model_name

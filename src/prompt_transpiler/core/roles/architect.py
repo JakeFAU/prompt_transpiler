@@ -7,7 +7,12 @@ from attrs import define
 from prompt_transpiler.core.exceptions import ArchitectureError
 from prompt_transpiler.core.interfaces import IArchitect
 from prompt_transpiler.core.roles.base import BaseRole
-from prompt_transpiler.dto.models import IntermediateRepresentation, Model
+from prompt_transpiler.dto.models import (
+    IntermediateRepresentation,
+    Message,
+    Model,
+    PromptPayload,
+)
 from prompt_transpiler.llm.factory import get_llm_provider
 from prompt_transpiler.llm.prompts.prompt_objects import CandidatePrompt
 from prompt_transpiler.utils.logging import get_logger
@@ -119,7 +124,51 @@ class GPTArchitect(IArchitect, BaseRole):
                         "gen_ai.response.completion_tokens", len(response_text.split())
                     )  # Approximate
 
-                return CandidatePrompt(prompt=response_text, model=target_model)
+                # 1. Routing Logic
+                messages = []
+                if target_model.supports_system_instructions:
+                    # Place primary_intent, tone_voice, and constraints in a system message
+                    system_content = (
+                        f"Primary Intent: {ir.spec.primary_intent}\n"
+                        f"Tone/Voice: {ir.spec.tone_voice}\n"
+                        f"Constraints: {json.dumps(ir.spec.constraints)}"
+                    )
+                    messages.append(Message(role="system", content=system_content))
+
+                    # Place domain_context, input_format, and the generated response
+                    # in a user message
+                    user_content = (
+                        f"Domain Context: {ir.spec.domain_context}\n"
+                        f"Input Format: {ir.spec.input_format}\n\n"
+                        f"{response_text}"
+                    )
+                    messages.append(Message(role="user", content=user_content))
+                else:
+                    # Merge all components into a single user message
+                    flat_content = (
+                        f"Primary Intent: {ir.spec.primary_intent}\n"
+                        f"Tone/Voice: {ir.spec.tone_voice}\n"
+                        f"Constraints: {json.dumps(ir.spec.constraints)}\n"
+                        f"Domain Context: {ir.spec.domain_context}\n"
+                        f"Input Format: {ir.spec.input_format}\n\n"
+                        f"{response_text}"
+                    )
+                    messages.append(Message(role="user", content=flat_content))
+
+                # 2. Structured Output
+                response_format = None
+                if target_model.supports_structured_outputs and ir.spec.output_schema:
+                    response_format = {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "output_schema",
+                            "schema": ir.spec.output_schema,
+                            "strict": True,
+                        },
+                    }
+
+                payload = PromptPayload(messages=messages, response_format=response_format)
+                return CandidatePrompt(payload=payload, model=target_model)
             except Exception as e:
                 logger.error("Architect failed", error=str(e))
                 raise ArchitectureError("Architect failed to generate prompt") from e

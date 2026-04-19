@@ -5,8 +5,10 @@ import pytest
 from prompt_transpiler.core.roles.pilot import DefaultPilot
 from prompt_transpiler.dto.models import (
     LLMResponse,
+    Message,
     Model,
     ModelProviderType,
+    PromptPayload,
     PromptStyle,
     Provider,
     TokenUsage,
@@ -37,7 +39,10 @@ async def test_pilot_success(mock_model):
         mock_get_provider.return_value = mock_provider
 
         pilot = DefaultPilot()
-        candidate = CandidatePrompt(prompt="Prompt", model=mock_model)
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Prompt")]),
+            model=mock_model,
+        )
 
         result = await pilot.test_candidate(candidate)
 
@@ -53,7 +58,10 @@ async def test_pilot_failure(mock_model):
         mock_get_provider.return_value = mock_provider
 
         pilot = DefaultPilot()
-        candidate = CandidatePrompt(prompt="Prompt", model=mock_model)
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="Prompt")]),
+            model=mock_model,
+        )
 
         result = await pilot.test_candidate(candidate)
 

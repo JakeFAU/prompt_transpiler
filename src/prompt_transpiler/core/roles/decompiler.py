@@ -44,6 +44,12 @@ class GeminiDecompiler(IDecompiler, BaseRole):
             You are an expert LLM Decompiler. Your job is to convert raw prompts into a
             Model-Agnostic Intermediate Representation (IR).
 
+            ### Input Structure
+            The user will provide a prompt that may consist of multiple messages
+            (system, user, assistant) and a requested response format.
+            You must synthesize all of this into the IR.
+
+
             ### CRITICAL INSTRUCTION: "Template" vs "Payload"
             You must classify the user's request into one of two types:
 
@@ -126,12 +132,16 @@ class GeminiDecompiler(IDecompiler, BaseRole):
             }
 
             try:
+                payload_text = original_prompt.payload.full_text
+                user_prompt = (
+                    f"Analyze this prompt and extract the specification:\n\n{payload_text}"
+                )
+                if original_prompt.payload.response_format:
+                    user_prompt += f"\n\nResponse Format: {original_prompt.payload.response_format}"
+
                 llm_response = await provider.generate(
                     system_prompt=system_prompt,
-                    user_prompt=(
-                        f"Analyze this prompt and extract the specification:\n\n"
-                        f"{original_prompt.prompt}"
-                    ),
+                    user_prompt=user_prompt,
                     model_name=self.model_name,
                     config={"temperature": 0.0},
                     response_schema=ir_schema,

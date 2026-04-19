@@ -12,8 +12,10 @@ from prompt_transpiler.core.scoring import (
 )
 from prompt_transpiler.dto.models import (
     LLMResponse,
+    Message,
     Model,
     ModelProviderType,
+    PromptPayload,
     PromptStyle,
     Provider,
     TokenUsage,
@@ -36,8 +38,12 @@ def mock_model():
 
 def test_weighted_score_algorithm(mock_model):
     algo = WeightedScoreAlgorithm(intent_weight=0.5, tone_weight=0.3, constraint_weight=0.2)
-    original = OriginalPrompt(prompt="orig", model=mock_model)
-    candidate = CandidatePrompt(prompt="cand", model=mock_model)
+    original = OriginalPrompt(
+        payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+    )
+    candidate = CandidatePrompt(
+        payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+    )
 
     # No scores yet
     assert algo.calculate_score(candidate, original) == 0.0
@@ -54,8 +60,12 @@ def test_weighted_score_algorithm(mock_model):
 
 def test_pairwise_preference_algorithm(mock_model):
     algo = PairwisePreferenceAlgorithm(intent_weight=0.5, tone_weight=0.3, constraint_weight=0.2)
-    original = OriginalPrompt(prompt="orig", model=mock_model)
-    candidate = CandidatePrompt(prompt="cand", model=mock_model)
+    original = OriginalPrompt(
+        payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+    )
+    candidate = CandidatePrompt(
+        payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+    )
     candidate.primary_intent_verdict = "candidate"
     candidate.tone_voice_verdict = "tie"
     candidate.constraint_verdicts = {"json": "baseline", "format": "candidate"}
@@ -86,8 +96,16 @@ async def test_llm_adjudicator_success(mock_model):
         mock_get_provider.return_value = mock_provider
 
         judge = LLMAdjudicator()
-        original = OriginalPrompt(prompt="orig", model=mock_model, response="base")
-        candidate = CandidatePrompt(prompt="cand", model=mock_model, response="cand_resp")
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+            model=mock_model,
+            response="base",
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+            model=mock_model,
+            response="cand_resp",
+        )
 
         score = await judge.evaluate(candidate, original)
 
@@ -114,8 +132,12 @@ async def test_llm_adjudicator_invalid_json(mock_model):
         mock_get_provider.return_value = mock_provider
 
         judge = LLMAdjudicator()
-        original = OriginalPrompt(prompt="orig", model=mock_model)
-        candidate = CandidatePrompt(prompt="cand", model=mock_model)
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
 
         with pytest.raises(EvaluationError, match="Judge returned invalid JSON"):
             await judge.evaluate(candidate, original)
@@ -129,8 +151,12 @@ async def test_llm_adjudicator_failure(mock_model):
         mock_get_provider.return_value = mock_provider
 
         judge = LLMAdjudicator()
-        original = OriginalPrompt(prompt="orig", model=mock_model)
-        candidate = CandidatePrompt(prompt="cand", model=mock_model)
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
 
         score = await judge.evaluate(candidate, original)
         assert score == 0.0

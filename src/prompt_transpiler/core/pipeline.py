@@ -24,6 +24,7 @@ from prompt_transpiler.core.scoring import (
     PairwisePreferenceAlgorithm,
     get_scoring_algorithm,
 )
+from prompt_transpiler.dto.models import Message, PromptPayload
 from prompt_transpiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     CompilationAttempt,
@@ -184,7 +185,10 @@ class PromptTranspilerPipeline:
             src_model_obj = self.registry.get_model(source_model, source_provider)
             tgt_model_obj = self.registry.get_model(target_model, target_provider)
 
-            original = OriginalPrompt(prompt=raw_prompt, model=src_model_obj)
+            original = OriginalPrompt(
+                payload=PromptPayload(messages=[Message(role="user", content=raw_prompt)]),
+                model=src_model_obj,
+            )
 
             # 2. Establish Baseline
             logger.debug("Stage 1: Establishing Baseline")
