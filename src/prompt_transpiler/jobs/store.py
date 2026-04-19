@@ -12,6 +12,7 @@ across implementations. Jobs are stored with full metadata including
 request payloads, results, errors, and lifecycle timestamps.
 """
 
+import collections
 import sqlite3
 import threading
 from typing import Any, Protocol, cast
@@ -432,6 +433,7 @@ class MemoryJobStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[str, JobRecord] = {}
+        self._queued_jobs: collections.deque[str] = collections.deque()
 
     def create_job(self, request: dict[str, Any]) -> str:
         """Create a new job record and return its identifier."""
@@ -453,6 +455,7 @@ class MemoryJobStore:
                 "cancel_requested": False,
                 "worker_id": None,
             }
+            self._queued_jobs.append(job_id)
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
@@ -469,24 +472,30 @@ class MemoryJobStore:
             job = self._jobs.get(job_id)
             if not job:
                 return
+            old_status = job.get("status")
             job.update(cast(JobRecord, fields))
             job["updated_at"] = utc_now_iso()
+
+            is_queued = fields.get("status") == JobStatus.QUEUED.value
+            was_queued = old_status == JobStatus.QUEUED.value
+            if is_queued and not was_queued:
+                self._queued_jobs.append(job_id)
 
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
         """Claim the next queued job for a worker."""
         with self._lock:
-            queued = [job for job in self._jobs.values() if job["status"] == JobStatus.QUEUED.value]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            if not queued:
-                return None
-            queued.sort(key=lambda job: job["created_at"])  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            job = queued[0]
-            now = utc_now_iso()
-            job["status"] = JobStatus.RUNNING.value
-            job["started_at"] = now
-            job["updated_at"] = now
-            job["stage"] = "claimed"
-            job["worker_id"] = worker_id
-            return cast(JobRecord, dict(job))
+            while self._queued_jobs:
+                job_id = self._queued_jobs.popleft()
+                job = self._jobs.get(job_id)
+                if job and job["status"] == JobStatus.QUEUED.value:
+                    now = utc_now_iso()
+                    job["status"] = JobStatus.RUNNING.value
+                    job["started_at"] = now
+                    job["updated_at"] = now
+                    job["stage"] = "claimed"
+                    job["worker_id"] = worker_id
+                    return cast(JobRecord, dict(job))
+            return None
 
     def complete_job(self, job_id: str, result: dict[str, Any]) -> None:
         """Mark a job as succeeded and store its result."""
