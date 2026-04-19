@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pytest
 
 from prompt_transpiler.dto.models import Message, PromptPayload
@@ -164,3 +166,16 @@ def test_build_transpile_report_defaults(minimal_candidate, model_obj):
 
 def test_build_compile_report_alias():
     assert build_compile_report is build_transpile_report
+
+
+def test_build_transpile_report_fallback(model_obj):
+    mock_candidate = MagicMock()
+    mock_candidate.attempt_history = "not a list"
+    mock_candidate.run_metadata = "not a dict"
+
+    report = build_transpile_report(
+        candidate=mock_candidate, source_model=model_obj, target_model=model_obj, final_score=0.1
+    )
+
+    assert report["attempts"] == []
+    assert report["run_metadata"] == {}
