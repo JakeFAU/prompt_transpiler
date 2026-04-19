@@ -8,9 +8,12 @@ from prompt_transpiler.dto.models import (
     IntermediateRepresentationMetaSchema,
     IntermediateRepresentationSchema,
     IntermediateRepresentationSpecSchema,
+    Message,
     Model,
     ModelProviderType,
     ModelSchema,
+    PromptPayload,
+    PromptPayloadSchema,
     PromptStyle,
     Provider,
     ProviderSchema,
@@ -122,3 +125,22 @@ class TestIntermediateRepresentation:
             schema.load(data)
         # Marshmallow nested validation errors are usually keyed by the field name
         assert "spec" in excinfo.value.messages
+
+
+def test_prompt_payload_serialization():
+    payload = PromptPayload(
+        messages=[
+            Message(role="system", content="You are a helpful assistant."),
+            Message(role="user", content="Hello!"),
+        ],
+        response_format={"type": "json_object"},
+    )
+    schema = PromptPayloadSchema()
+    data = schema.dump(payload)
+    assert data["messages"][0]["role"] == "system"
+    assert data["response_format"]["type"] == "json_object"
+
+    loaded = schema.load(data)
+    assert isinstance(loaded, PromptPayload)
+    expected_message_count = 2
+    assert len(loaded.messages) == expected_message_count

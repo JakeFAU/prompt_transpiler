@@ -393,3 +393,64 @@ class LLMResponseSchema(ma.Schema):
     @ma.post_load
     def make_llm_response(self, data: dict[str, Any], **kwargs: Any) -> LLMResponse:
         return LLMResponse(**data)
+
+
+@define(kw_only=True)
+class Message:
+    """
+    Represents a single message in a prompt.
+
+    Attributes:
+        role (str): The role of the message sender (e.g., "system", "user", "assistant").
+        content (str): The text content of the message.
+    """
+
+    role: str = field(validator=validators.instance_of(str))
+    content: str = field(validator=validators.instance_of(str))
+
+
+class MessageSchema(ma.Schema):
+    """
+    Marshmallow schema for serializing and deserializing `Message` objects.
+    """
+
+    role = ma.fields.Str(required=True)
+    content = ma.fields.Str(required=True)
+
+    @ma.post_load
+    def make_message(self, data: dict[str, Any], **kwargs: Any) -> Message:
+        return Message(**data)
+
+
+@define(kw_only=True)
+class PromptPayload:
+    """
+    Represents the full payload for a prompt, including messages and response format.
+
+    Attributes:
+        messages (list[Message]): A list of messages in the prompt.
+        response_format (dict[str, Any] | None): The desired format of the response.
+    """
+
+    messages: list[Message] = field(factory=list, validator=validators.instance_of(list))
+    response_format: dict[str, Any] | None = field(default=None)
+
+    @property
+    def full_text(self) -> str:
+        """
+        Returns a single string representation of all messages.
+        """
+        return "\n".join([f"{m.role}: {m.content}" for m in self.messages])
+
+
+class PromptPayloadSchema(ma.Schema):
+    """
+    Marshmallow schema for serializing and deserializing `PromptPayload` objects.
+    """
+
+    messages = ma.fields.List(ma.fields.Nested(MessageSchema), required=True)
+    response_format = ma.fields.Dict(allow_none=True)
+
+    @ma.post_load
+    def make_payload(self, data: dict[str, Any], **kwargs: Any) -> PromptPayload:
+        return PromptPayload(**data)
