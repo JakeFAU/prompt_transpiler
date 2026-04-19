@@ -1,24 +1,24 @@
 import pytest
 
-from prompt_transpiler.reporting import build_transpile_report, build_compile_report
-from prompt_transpiler.dto.models import Model, PromptPayload, Message
+from prompt_transpiler.dto.models import Message, PromptPayload
 from prompt_transpiler.llm.prompts.prompt_objects import CandidatePrompt, CompilationAttempt
+from prompt_transpiler.reporting import build_compile_report, build_transpile_report
+
 
 @pytest.fixture
 def test_payload():
     return PromptPayload(
         messages=[
             Message(role="system", content="You are a helpful assistant."),
-            Message(role="user", content="Hello!")
+            Message(role="user", content="Hello!"),
         ]
     )
 
+
 @pytest.fixture
 def minimal_candidate(model_obj, test_payload):
-    return CandidatePrompt(
-        payload=test_payload,
-        model=model_obj
-    )
+    return CandidatePrompt(payload=test_payload, model=model_obj)
+
 
 @pytest.fixture
 def full_candidate(model_obj, test_payload):
@@ -36,7 +36,7 @@ def full_candidate(model_obj, test_payload):
         constraint_confidences={"len": "Low"},
         feedback="Make it better",
         accepted=True,
-        new_best=True
+        new_best=True,
     )
 
     candidate = CandidatePrompt(
@@ -56,16 +56,14 @@ def full_candidate(model_obj, test_payload):
         feedback="Great job",
         diff_summary="Changed a few words",
         attempt_history=[attempt1],
-        run_metadata={"duration": 1.2}
+        run_metadata={"duration": 1.2},
     )
     return candidate
 
+
 def test_build_transpile_report_basic(minimal_candidate, model_obj):
     report = build_transpile_report(
-        candidate=minimal_candidate,
-        source_model=model_obj,
-        target_model=model_obj,
-        final_score=0.5
+        candidate=minimal_candidate, source_model=model_obj, target_model=model_obj, final_score=0.5
     )
 
     assert report["transpiled_prompt"] == minimal_candidate.prompt
@@ -78,7 +76,7 @@ def test_build_transpile_report_basic(minimal_candidate, model_obj):
     assert scores["tone_voice_score"] is None
     assert scores["domain_context_score"] is None
     assert scores["constraint_scores"] is None
-    assert scores["final_score"] == 0.5
+    assert scores["final_score"] == 0.5  # noqa: PLR2004
 
     comparisons = report["comparisons"]
     assert comparisons["primary_intent_verdict"] is None
@@ -98,13 +96,14 @@ def test_build_transpile_report_basic(minimal_candidate, model_obj):
     assert report["attempts"] == []
     assert report["token_usage"] == {}
 
+
 def test_build_transpile_report_full(full_candidate, model_obj):
     report = build_transpile_report(
         candidate=full_candidate,
         source_model=model_obj,
         target_model=model_obj,
         final_score=0.9,
-        token_usage={"total": {"prompt_tokens": 10}}
+        token_usage={"total": {"prompt_tokens": 10}},
     )
 
     assert report["transpiled_prompt"] == full_candidate.prompt
@@ -113,11 +112,11 @@ def test_build_transpile_report_full(full_candidate, model_obj):
     assert report["diff_summary"] == "Changed a few words"
 
     scores = report["scores"]
-    assert scores["primary_intent_score"] == 0.95
-    assert scores["tone_voice_score"] == 0.85
-    assert scores["domain_context_score"] == 0.9
+    assert scores["primary_intent_score"] == 0.95  # noqa: PLR2004
+    assert scores["tone_voice_score"] == 0.85  # noqa: PLR2004
+    assert scores["domain_context_score"] == 0.9  # noqa: PLR2004
     assert scores["constraint_scores"] == {"c1": 0.8}
-    assert scores["final_score"] == 0.9
+    assert scores["final_score"] == 0.9  # noqa: PLR2004
 
     comparisons = report["comparisons"]
     assert comparisons["primary_intent_verdict"] == "Excellent"
@@ -132,9 +131,9 @@ def test_build_transpile_report_full(full_candidate, model_obj):
     assert len(report["attempts"]) == 1
     attempt = report["attempts"][0]
     assert attempt["attempt"] == 1
-    assert attempt["final_score"] == 0.8
-    assert attempt["primary_intent_score"] == 0.9
-    assert attempt["tone_voice_score"] == 0.8
+    assert attempt["final_score"] == 0.8  # noqa: PLR2004
+    assert attempt["primary_intent_score"] == 0.9  # noqa: PLR2004
+    assert attempt["tone_voice_score"] == 0.8  # noqa: PLR2004
     assert attempt["constraint_scores"] == {"len": 0.7}
     assert attempt["primary_intent_verdict"] == "Good"
     assert attempt["tone_voice_verdict"] == "Okay"
@@ -150,16 +149,13 @@ def test_build_transpile_report_full(full_candidate, model_obj):
 
 
 def test_build_transpile_report_defaults(minimal_candidate, model_obj):
-    # Mess up the expected types directly by bypassing validators just for this test
-    # (Since CandidatePrompt uses attrs with validators, we override the dict dict __dict__ or using patch)
+    # (Since CandidatePrompt uses attrs with validators, we override the dict
+    # dict __dict__ or using patch)
     object.__setattr__(minimal_candidate, "attempt_history", None)
     object.__setattr__(minimal_candidate, "run_metadata", "not a dict")
 
     report = build_transpile_report(
-        candidate=minimal_candidate,
-        source_model=model_obj,
-        target_model=model_obj,
-        final_score=0.1
+        candidate=minimal_candidate, source_model=model_obj, target_model=model_obj, final_score=0.1
     )
 
     assert report["attempts"] == []
