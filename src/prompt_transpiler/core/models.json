@@ -1,0 +1,58 @@
+[
+  {
+    "model_name": "gpt-4o",
+    "provider": {
+      "provider": "openai",
+      "provider_type": "api"
+    },
+    "supports_system_messages": true,
+    "supports_system_instructions": true,
+    "supports_structured_outputs": true,
+    "context_window_size": 128000,
+    "prompt_style": "markdown",
+    "supports_json_mode": true,
+    "prompting_tips": "Be concise. Use Markdown."
+  },
+  {
+    "model_name": "gemini-2.0-flash",
+    "provider": {
+      "provider": "gemini",
+      "provider_type": "api"
+    },
+    "supports_system_messages": true,
+    "supports_system_instructions": true,
+    "supports_structured_outputs": true,
+    "context_window_size": 1000000,
+    "prompt_style": "markdown",
+    "supports_json_mode": true,
+    "prompting_tips": "Be concise. Use Markdown."
+  },
+  {
+    "model_name": "claude-3-5-sonnet",
+    "provider": {
+      "provider": "anthropic",
+      "provider_type": "api"
+    },
+    "supports_system_messages": true,
+    "supports_system_instructions": true,
+    "supports_structured_outputs": false,
+    "context_window_size": 200000,
+    "prompt_style": "xml",
+    "supports_json_mode": true,
+    "prompting_tips": "Use XML tags."
+  },
+  {
+    "model_name": "meta-llama/Llama-3.3-70B-Instruct",
+    "provider": {
+      "provider": "huggingface",
+      "provider_type": "huggingface"
+    },
+    "supports_system_messages": true,
+    "supports_system_instructions": true,
+    "supports_structured_outputs": false,
+    "context_window_size": 128000,
+    "prompt_style": "markdown",
+    "supports_json_mode": false,
+    "prompting_tips": "Be clear and direct. Use structured formatting."
+  }
+]

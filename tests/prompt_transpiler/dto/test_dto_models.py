@@ -58,6 +58,8 @@ class TestModel:
         assert isinstance(model, Model)
         assert model.model_name == "gpt-4"
         assert model.prompt_style == PromptStyle.MARKDOWN
+        assert model.supports_system_instructions is True
+        assert model.supports_structured_outputs is False
         assert isinstance(model.provider, Provider)
 
     def test_model_serialization(self, model_obj, model_data):
