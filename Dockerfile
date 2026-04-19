@@ -83,8 +83,10 @@ ENV HOST=0.0.0.0 \
 # Job store defaults (adjust to your implementation)
 # If you end up using DuckDB for job persistence, ensure JOB_DB_PATH points to a writable path.
 ENV JOB_STORE=duckdb \
-    JOB_DB_PATH=/tmp/prompt_compiler_jobs.duckdb \
+    JOB_DB_PATH=/app/data/jobs.duckdb \
     WORKER_ENABLED=true
+
+RUN mkdir -p /app/data && chmod 700 /app/data
 
 # ---- OpenTelemetry defaults ----
 # You asked specifically to use opentelemetry-instrument launcher.
