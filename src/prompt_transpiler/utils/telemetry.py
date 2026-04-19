@@ -137,25 +137,10 @@ class TelemetryManager:
 
         return self._meter.create_counter(name, description=description, unit=unit)
 
-    def get_histogram(self, name: str, description: str = "", unit: str = "1") -> metrics.Histogram:
-        """Get or create a histogram metric."""
-        if not self._enabled or self._meter is None:
-            return cast(metrics.Histogram, _NoOpHistogram())
-
-        return self._meter.create_histogram(name, description=description, unit=unit)
-
-
 class _NoOpCounter:
     """Dummy counter for when telemetry is disabled."""
 
     def add(self, amount: float | int, attributes: dict[str, Any] | None = None) -> None:
-        pass
-
-
-class _NoOpHistogram:
-    """Dummy histogram for when telemetry is disabled."""
-
-    def record(self, amount: float | int, attributes: dict[str, Any] | None = None) -> None:
         pass
 
 
