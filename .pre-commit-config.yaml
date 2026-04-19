@@ -20,13 +20,13 @@ repos:
       - id: ruff-format
 
   # --- MYPY (Type Checker) ---
-  # CHANGED: We use 'local' so it runs inside your Poetry environment.
+  # CHANGED: We use 'local' so it runs inside your uv-managed environment.
   # This gives it access to attrs, marshmallow, and your config settings.
   - repo: local
     hooks:
       - id: mypy
         name: mypy
-        entry: poetry run mypy
+        entry: uv run mypy
         language: system
         types: [python]
         require_serial: true # Mypy prefers running on the whole batch, not parallel chunks

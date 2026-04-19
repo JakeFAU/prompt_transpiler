@@ -23,15 +23,14 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
-      # 2. BUILD: Poetry creates the artifacts in 'dist/'
+      # 2. BUILD: uv creates the artifacts in 'dist/'
       - name: Build
-        run: poetry build
+        run: uv build
 
-      # 3. PUBLISH: We swap 'poetry publish' for the official PyPA action.
-      # Why? Poetry doesn't natively handle the OIDC handshake yet.
+      # 3. PUBLISH: Use the official PyPA action for the OIDC handshake.
       # This action picks up the files from 'dist/' and handles the auth automatically.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
