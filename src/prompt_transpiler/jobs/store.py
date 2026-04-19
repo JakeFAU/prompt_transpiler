@@ -432,6 +432,7 @@ class MemoryJobStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[str, JobRecord] = {}
+        self._queued_jobs: dict[str, JobRecord] = {}
 
     def create_job(self, request: dict[str, Any]) -> str:
         """Create a new job record and return its identifier."""
@@ -453,6 +454,7 @@ class MemoryJobStore:
                 "cancel_requested": False,
                 "worker_id": None,
             }
+            self._queued_jobs[job_id] = self._jobs[job_id]
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
@@ -471,15 +473,20 @@ class MemoryJobStore:
                 return
             job.update(cast(JobRecord, fields))
             job["updated_at"] = utc_now_iso()
+            if job["status"] == JobStatus.QUEUED.value:
+                self._queued_jobs[job_id] = job
+            else:
+                self._queued_jobs.pop(job_id, None)
 
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
         """Claim the next queued job for a worker."""
         with self._lock:
-            queued = [job for job in self._jobs.values() if job["status"] == JobStatus.QUEUED.value]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            if not queued:
+            if not self._queued_jobs:
                 return None
-            queued.sort(key=lambda job: job["created_at"])  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            job = queued[0]
+            job_id = next(iter(self._queued_jobs))
+            job = self._jobs[job_id]
+            self._queued_jobs.pop(job_id, None)
+
             now = utc_now_iso()
             job["status"] = JobStatus.RUNNING.value
             job["started_at"] = now
@@ -525,6 +532,7 @@ class MemoryJobStore:
             ]
             for job_id in to_delete:
                 self._jobs.pop(job_id, None)
+                self._queued_jobs.pop(job_id, None)
             return len(to_delete)
 
     def close(self) -> None:
