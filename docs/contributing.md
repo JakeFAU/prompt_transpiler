@@ -4,7 +4,7 @@ Thank you for your interest in contributing to prompt-compiler!
 
 ## Development Setup
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management and packaging.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and packaging.
 
 1. **Clone the repository:**
 
@@ -16,13 +16,13 @@ This project uses [Poetry](https://python-poetry.org/) for dependency management
 2. **Install dependencies:**
 
     ```bash
-    poetry install
+    uv sync --extra dev --extra test
     ```
 
-3. **Activate the virtual environment:**
+3. **Run commands in the project environment:**
 
     ```bash
-    poetry shell
+    uv run prompt-compiler --help
     ```
 
 ## Running Tests
@@ -30,7 +30,7 @@ This project uses [Poetry](https://python-poetry.org/) for dependency management
 We use `pytest` for testing. Ensure your changes pass all tests and maintain at least 85% coverage.
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ## Linting and Formatting
@@ -39,13 +39,13 @@ We use `ruff` for linting and formatting and `mypy` for static type checking.
 
 ```bash
 # Lint
-poetry run ruff check .
+uv run ruff check .
 
 # Format
-poetry run ruff format .
+uv run ruff format .
 
 # Type check
-poetry run mypy src
+uv run mypy src
 ```
 
 ## Pull Requests
@@ -60,7 +60,7 @@ poetry run mypy src
 Documentation is built using Sphinx. To build the docs locally:
 
 ```bash
-poetry install --with docs
+uv sync --extra docs
 cd docs
-poetry run sphinx-build -b html . _build/html
+uv run sphinx-build -b html . _build/html
 ```

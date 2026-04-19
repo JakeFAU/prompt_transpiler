@@ -34,18 +34,18 @@ The system operates like a standard compiler toolchain with specialized agents:
 
 ## 📦 Installation
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management and requires **Python 3.13+**.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and requires **Python 3.13+**.
 
 ```bash
 # Clone the repo
-git clone https://github.com/JakeFAU/prompt_transpiler.git
+git clone git@github.com:UKGEPIC/ds-prompt-compiler.git
 cd prompt_transpiler
 
 # Install dependencies
-poetry install
+uv sync --extra dev --extra test
 
-# Activate the shell
-poetry shell
+# Run commands inside the project environment
+uv run prompt-compiler --help
 ```
 
 ## 🛠 Configuration
@@ -228,19 +228,19 @@ We enforce strict typing and code quality.
 
 ```bash
 # Run the full test suite with coverage
-poetry run pytest
+uv run pytest
 
 # Run specific tests
-poetry run pytest tests/prompt_compiler/core/test_pipeline.py
+uv run pytest tests/prompt_compiler/core/test_pipeline.py
 
 # Run type checks (Strict Mode)
-poetry run mypy .
+uv run mypy .
 
 # Run linting
-poetry run ruff check .
+uv run ruff check .
 
 # Run pre-commit hooks manually
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ## 📁 Project Structure
@@ -278,7 +278,3 @@ src/prompt_compiler/
 2. Create a feature branch.
 3. Ensure `pre-commit` passes (Ruff + Mypy).
 4. Submit a PR.
-
-## 📄 License
-
-See [LICENSE](LICENSE) for details.

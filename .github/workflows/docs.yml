@@ -26,19 +26,18 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+          enable-cache: true
 
       - name: Install dependencies
-        run: poetry install --with docs
+        run: uv sync --frozen --extra docs
 
       - name: Build documentation
         run: |
-          poetry run sphinx-apidoc -f -o docs/ ./src/prompt_compiler
-          poetry run sphinx-build -b html docs/ docs/_build/html
+          uv run sphinx-apidoc -f -o docs/ ./src/prompt_compiler
+          uv run sphinx-build -b html docs/ docs/_build/html
 
       # MODERN STEP 1: Upload the build result as an artifact
       - name: Upload artifact

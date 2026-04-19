@@ -6,7 +6,7 @@ prompt styles, and model configurations. It uses `attrs` for data classes and
 `marshmallow` for serialization/deserialization.
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TypedDict
 
 import marshmallow as ma
@@ -35,7 +35,7 @@ class ExampleSchema(ma.Schema):
     output = ma.fields.Str(required=True)
 
 
-class ModelProviderType(str, Enum):
+class ModelProviderType(StrEnum):
     """
     Enumeration of supported model provider types.
 
@@ -48,7 +48,7 @@ class ModelProviderType(str, Enum):
     HUGGINGFACE = "huggingface"
 
 
-class PromptStyle(str, Enum):
+class PromptStyle(StrEnum):
     """
     Enumeration of supported prompt styles.
 
