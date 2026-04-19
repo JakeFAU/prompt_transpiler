@@ -127,20 +127,19 @@ class GPTArchitect(IArchitect, BaseRole):
                 # 1. Routing Logic
                 messages = []
                 if target_model.supports_system_instructions:
-                    # Place primary_intent, tone_voice, and constraints in a system message
+                    # Instructions and Architect's optimized prompt go to System
                     system_content = (
                         f"Primary Intent: {ir.spec.primary_intent}\n"
                         f"Tone/Voice: {ir.spec.tone_voice}\n"
-                        f"Constraints: {json.dumps(ir.spec.constraints)}"
+                        f"Constraints: {json.dumps(ir.spec.constraints)}\n\n"
+                        f"{response_text}"
                     )
                     messages.append(Message(role="system", content=system_content))
 
-                    # Place domain_context, input_format, and the generated response
-                    # in a user message
+                    # Context and data go to User
                     user_content = (
                         f"Domain Context: {ir.spec.domain_context}\n"
-                        f"Input Format: {ir.spec.input_format}\n\n"
-                        f"{response_text}"
+                        f"Input Format: {ir.spec.input_format}"
                     )
                     messages.append(Message(role="user", content=user_content))
                 else:

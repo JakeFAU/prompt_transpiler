@@ -33,7 +33,7 @@ class GeminiDecompiler(IDecompiler, BaseRole):
     """
 
     provider_name: str = "gemini"
-    model_name: str = "gemini-2.5-pro"
+    model_name: str = "gemini-2.0-flash"
 
     @property
     def role_name(self) -> str:

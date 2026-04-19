@@ -92,9 +92,9 @@ async def test_architect_design_prompt_routing_system(mock_ir, mock_model):
         assert "intent" in system_msg.content
         assert "tone" in system_msg.content
         assert "c1" in system_msg.content
+        assert "Optimized Prompt" in system_msg.content
 
         assert "domain" in user_msg.content
-        assert "Optimized Prompt" in user_msg.content
 
 
 @pytest.mark.asyncio

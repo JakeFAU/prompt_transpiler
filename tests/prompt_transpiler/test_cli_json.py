@@ -123,9 +123,8 @@ def test_cli_json_output(mock_pipeline: AsyncMock, runner: CliRunner) -> None:
 
     assert result.exit_code == 0
     # Output should be valid JSON and contain the messages
-    # Handle potential extra output by splitting at token summary
-    raw_output = result.output.split("--- Token Usage Summary ---")[0]
-    output_json = json.loads(raw_output)
+    # stdout should be clean now as we moved other info to stderr
+    output_json = json.loads(result.stdout)
     # Actually, if --output-json is set, we might want to suppress other output or handle it
     # carefully.
     # Task says: "If --output-json is provided, print the serialized payload."

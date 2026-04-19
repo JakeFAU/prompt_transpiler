@@ -151,36 +151,39 @@ def _token_usage_delta(
 
 def _echo_score_summary(report: dict[str, Any]) -> None:
     scores = report["scores"]
-    click.echo("\n--- Score Summary ---")
-    click.echo(f"Final Score:         {scores['final_score']:.3f}")
-    click.echo(f"Primary Intent:      {scores['primary_intent_score']}")
-    click.echo(f"Tone / Voice:        {scores['tone_voice_score']}")
+    click.echo("\n--- Score Summary ---", err=True)
+    click.echo(f"Final Score:         {scores['final_score']:.3f}", err=True)
+    click.echo(f"Primary Intent:      {scores['primary_intent_score']}", err=True)
+    click.echo(f"Tone / Voice:        {scores['tone_voice_score']}", err=True)
     constraint_scores = scores.get("constraint_scores") or {}
     if constraint_scores:
-        click.echo("Constraint Scores:")
+        click.echo("Constraint Scores:", err=True)
         for constraint, score in constraint_scores.items():
-            click.echo(f"  - {constraint}: {score}")
+            click.echo(f"  - {constraint}: {score}", err=True)
 
     attempts = report.get("attempts") or []
     if attempts:
-        click.echo("Attempts:")
+        click.echo("Attempts:", err=True)
         for attempt in attempts:
             status = "accepted" if attempt["accepted"] else "rejected"
-            click.echo(f"  - #{attempt['attempt']}: score={attempt['final_score']:.3f} ({status})")
-    click.echo("---------------------\n")
+            click.echo(
+                f"  - #{attempt['attempt']}: score={attempt['final_score']:.3f} ({status})",
+                err=True,
+            )
+    click.echo("---------------------\n", err=True)
 
 
 def _echo_token_summary(summary: dict[str, dict[str, int]]) -> None:
-    click.echo("\n--- Token Usage Summary ---")
+    click.echo("\n--- Token Usage Summary ---", err=True)
     total_cost_tokens = 0
     for model, usage in summary.items():
-        click.echo(f"Model: {model}")
-        click.echo(f"  Prompt Tokens:     {usage['prompt_tokens']}")
-        click.echo(f"  Completion Tokens: {usage['completion_tokens']}")
-        click.echo(f"  Total Tokens:      {usage['total_tokens']}")
+        click.echo(f"Model: {model}", err=True)
+        click.echo(f"  Prompt Tokens:     {usage['prompt_tokens']}", err=True)
+        click.echo(f"  Completion Tokens: {usage['completion_tokens']}", err=True)
+        click.echo(f"  Total Tokens:      {usage['total_tokens']}", err=True)
         total_cost_tokens += usage["total_tokens"]
-    click.echo(f"Grand Total Tokens:  {total_cost_tokens}")
-    click.echo("---------------------------\n")
+    click.echo(f"Grand Total Tokens:  {total_cost_tokens}", err=True)
+    click.echo("---------------------------\n", err=True)
 
 
 def _current_role_settings() -> dict[str, dict[str, str]]:
@@ -266,7 +269,7 @@ def _build_cli_report(
 @click.option(
     "--target",
     "-t",
-    default="gemini-2.5-flash",
+    default="gemini-2.0-flash",
     show_default=True,
     help="Target model name.",
 )
@@ -437,7 +440,10 @@ def main(  # noqa: PLR0913, PLR0915
     if not quiet:
         source_label = f"{source} ({source_provider})"
         target_label = f"{target} ({target_provider})"
-        click.echo(f"Transpiling prompt from {source_label} to {target_label}...")
+        click.echo(
+            f"Transpiling prompt from {source_label} to {target_label}...",
+            err=True,
+        )
 
     logger.info("Starting transpilation", source=source, target=target, env=env)
     usage_before = _token_usage_snapshot()
@@ -481,7 +487,7 @@ def main(  # noqa: PLR0913, PLR0915
             if report_json:
                 report_json.write_text(json.dumps(report, indent=2), encoding="utf-8")
                 if not quiet:
-                    click.echo(f"Report JSON saved to: {report_json}")
+                    click.echo(f"Report JSON saved to: {report_json}", err=True)
 
             # 5. Handle Output
             if output_json:
@@ -490,10 +496,10 @@ def main(  # noqa: PLR0913, PLR0915
             elif output:
                 output.write_text(result.prompt, encoding="utf-8")
                 if not quiet:
-                    click.echo(f"Transpiled prompt saved to: {output}")
+                    click.echo(f"Transpiled prompt saved to: {output}", err=True)
             else:
                 if not quiet:
-                    click.echo("\n--- Transpiled Prompt ---\n")
+                    click.echo("\n--- Transpiled Prompt ---\n", err=True)
 
                 # Format for terminal: role: content
                 for msg in result.payload.messages:
@@ -501,19 +507,21 @@ def main(  # noqa: PLR0913, PLR0915
                     click.echo(f"{role_label}: {msg.content}")
 
                 if result.payload.response_format:
+                    formatted_schema = json.dumps(result.payload.response_format, indent=2)
                     click.echo(
-                        f"\nResponse Format: {json.dumps(result.payload.response_format, indent=2)}"
+                        f"\nResponse Format: {formatted_schema}",
+                        err=True,
                     )
 
                 if not quiet:
-                    click.echo("\n-----------------------\n")
+                    click.echo("\n-----------------------\n", err=True)
 
             # 6. Optional semantic diff explanation
             diff_summary = getattr(result, "diff_summary", None)
             if not quiet and diff_summary:
-                click.echo("\n--- Semantic Diff ---\n")
-                click.echo(diff_summary)
-                click.echo("\n---------------------\n")
+                click.echo("\n--- Semantic Diff ---\n", err=True)
+                click.echo(diff_summary, err=True)
+                click.echo("\n---------------------\n", err=True)
 
         except Exception as e:
             logger.error("Transpilation failed", error=str(e))
