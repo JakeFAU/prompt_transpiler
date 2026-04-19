@@ -50,17 +50,6 @@ def parse_int_env(name: str, default: int) -> int:
         return default
 
 
-def parse_float_env(name: str, default: float) -> float:
-    """Parse a float from environment variables."""
-    raw = os.getenv(name)
-    if raw is None or raw.strip() == "":
-        return default
-    try:
-        return float(raw)
-    except ValueError:
-        return default
-
-
 def sleep_ms(ms: int) -> None:
     """Sleep for the requested number of milliseconds."""
     time.sleep(ms / 1000.0)
