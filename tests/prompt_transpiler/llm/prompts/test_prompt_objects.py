@@ -1,6 +1,13 @@
 import pytest
 
-from prompt_transpiler.dto.models import Model, ModelProviderType, PromptStyle, Provider
+from prompt_transpiler.dto.models import (
+    Message,
+    Model,
+    ModelProviderType,
+    PromptPayload,
+    PromptStyle,
+    Provider,
+)
 from prompt_transpiler.llm.prompts.prompt_objects import (
     CandidatePrompt,
     OriginalPrompt,
@@ -27,20 +34,35 @@ def mock_model():
     )
 
 
-def test_original_prompt_creation(mock_model):
-    op = OriginalPrompt(
-        prompt="Hello", model=mock_model, response_format={"type": "json"}, response="Hi"
+@pytest.fixture
+def mock_payload():
+    return PromptPayload(
+        messages=[
+            Message(role="system", content="You are a helpful assistant."),
+            Message(role="user", content="Hello"),
+        ],
+        response_format={"type": "json"},
     )
-    assert op.prompt == "Hello"
+
+
+def test_original_prompt_creation(mock_model, mock_payload):
+    op = OriginalPrompt(payload=mock_payload, model=mock_model, response="Hi")
+    assert op.prompt == mock_payload.full_text
+    assert op.payload == mock_payload
     assert op.model == mock_model
-    assert op.response_format == {"type": "json"}
     assert op.response == "Hi"
 
 
-def test_original_prompt_schema(mock_model):
+def test_original_prompt_schema(mock_model, mock_payload):
     schema = OriginalPromptSchema()
     data = {
-        "prompt": "Hello",
+        "payload": {
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": "Hello"},
+            ],
+            "response_format": {"type": "json"},
+        },
         "model": {
             "provider": {"provider": "OpenAI", "provider_type": "api", "metadata": {}},
             "model_name": "gpt-4",
@@ -51,22 +73,17 @@ def test_original_prompt_schema(mock_model):
             "prompting_tips": "Be concise.",
             "metadata": {},
         },
-        "response_format": {"type": "json"},
         "response": "Hi",
     }
     op = schema.load(data)
     assert isinstance(op, OriginalPrompt)
-    assert op.prompt == "Hello"
+    assert op.prompt == mock_payload.full_text
 
 
-def test_transpiled_prompt_creation(mock_model):
-    cp = CandidatePrompt(
-        prompt="Hello optimized",
-        model=mock_model,
-        response_format={"type": "json"},
-        response="Hi optimized",
-    )
-    assert cp.prompt == "Hello optimized"
+def test_transpiled_prompt_creation(mock_model, mock_payload):
+    cp = CandidatePrompt(payload=mock_payload, model=mock_model, response="Hi optimized")
+    assert cp.prompt == mock_payload.full_text
+    assert cp.payload == mock_payload
     assert cp.model == mock_model
     assert cp.primary_intent_score is None
     assert cp.diff_summary is None
@@ -78,9 +95,9 @@ class MockScoringAlgorithm(ScoringAlgorithm):
         return EXPECTED_SCORE
 
 
-def test_transpiled_prompt_scoring_caching(mock_model):
-    op = OriginalPrompt(prompt="Hello", model=mock_model)
-    cp = CandidatePrompt(prompt="Hello optimized", model=mock_model)
+def test_transpiled_prompt_scoring_caching(mock_model, mock_payload):
+    op = OriginalPrompt(payload=mock_payload, model=mock_model)
+    cp = CandidatePrompt(payload=mock_payload, model=mock_model)
     algo = MockScoringAlgorithm()
 
     # First calculation
