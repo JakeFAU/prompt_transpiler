@@ -196,17 +196,20 @@ class DynamicScoringAlgorithm(ScoringAlgorithm):
         return score
 
 
+_ALGORITHM_CLASSES: dict[str, type[ScoringAlgorithm]] = {
+    "pairwise": PairwisePreferenceAlgorithm,
+    "weighted": WeightedScoreAlgorithm,
+    "geometric": GeometricMeanAlgorithm,
+    "penalty": PenaltyAlgorithm,
+    "dynamic": DynamicScoringAlgorithm,
+}
+
+
 def get_scoring_algorithm(name: str) -> ScoringAlgorithm:
     """Factory to get scoring algorithm by name."""
-    mapping = {
-        "pairwise": PairwisePreferenceAlgorithm(),
-        "weighted": WeightedScoreAlgorithm(),
-        "geometric": GeometricMeanAlgorithm(),
-        "penalty": PenaltyAlgorithm(),
-        "dynamic": DynamicScoringAlgorithm(),
-    }
     # Default to pairwise if unknown
-    return mapping.get(name.lower(), PairwisePreferenceAlgorithm())
+    cls = _ALGORITHM_CLASSES.get(name.lower(), PairwisePreferenceAlgorithm)
+    return cls()
 
 
 @define
