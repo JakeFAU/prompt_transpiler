@@ -207,23 +207,7 @@ class DuckDBJobStore:
     def purge_expired(self, cutoff_iso: str) -> int:
         """Delete completed jobs older than the cutoff timestamp."""
         with self._lock:
-            count_row = self._conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM compile_jobs
-                WHERE completed_at IS NOT NULL
-                  AND completed_at < ?
-                  AND status IN (?, ?, ?)
-                """,
-                [
-                    cutoff_iso,
-                    JobStatus.SUCCEEDED.value,
-                    JobStatus.FAILED.value,
-                    JobStatus.CANCELED.value,
-                ],
-            ).fetchone()
-            count = int(count_row[0]) if count_row else 0
-            self._conn.execute(
+            cur = self._conn.execute(
                 """
                 DELETE FROM compile_jobs
                 WHERE completed_at IS NOT NULL
@@ -237,7 +221,8 @@ class DuckDBJobStore:
                     JobStatus.CANCELED.value,
                 ],
             )
-            return count
+            res = cur.fetchone()
+            return int(res[0]) if res else 0
 
     def close(self) -> None:
         """Close the underlying DuckDB connection."""
