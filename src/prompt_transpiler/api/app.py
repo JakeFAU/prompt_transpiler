@@ -83,13 +83,27 @@ def _configure_logging() -> None:
 
 def _create_job_store() -> JobStore:
     job_store = os.getenv("JOB_STORE", "duckdb").lower()
-    db_path = os.getenv("JOB_DB_PATH", "/tmp/prompt_transpiler_jobs.duckdb")
+
+    # Use a secure, user-specific directory by default instead of a shared /tmp path
+    default_db_dir = Path.home() / ".prompt_transpiler"
+
+    db_path = os.getenv("JOB_DB_PATH")
+    if not db_path:
+        default_db_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        db_path = str(default_db_dir / "jobs.duckdb")
+
     if job_store == "sqlite":
         if not db_path.endswith(".sqlite"):
-            db_path = "/tmp/prompt_transpiler_jobs.sqlite"
+            if db_path == str(default_db_dir / "jobs.duckdb"):
+                db_path = str(default_db_dir / "jobs.sqlite")
+            else:
+                # If a custom path without .sqlite was provided, append the extension
+                db_path = str(Path(db_path).with_suffix(".sqlite"))
         return SQLiteJobStore(db_path)
+
     if job_store == "memory":
         return MemoryJobStore()
+
     return DuckDBJobStore(db_path)
 
 
