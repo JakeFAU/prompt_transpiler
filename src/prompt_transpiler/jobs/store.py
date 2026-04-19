@@ -207,23 +207,7 @@ class DuckDBJobStore:
     def purge_expired(self, cutoff_iso: str) -> int:
         """Delete completed jobs older than the cutoff timestamp."""
         with self._lock:
-            count_row = self._conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM compile_jobs
-                WHERE completed_at IS NOT NULL
-                  AND completed_at < ?
-                  AND status IN (?, ?, ?)
-                """,
-                [
-                    cutoff_iso,
-                    JobStatus.SUCCEEDED.value,
-                    JobStatus.FAILED.value,
-                    JobStatus.CANCELED.value,
-                ],
-            ).fetchone()
-            count = int(count_row[0]) if count_row else 0
-            self._conn.execute(
+            res = self._conn.execute(
                 """
                 DELETE FROM compile_jobs
                 WHERE completed_at IS NOT NULL
@@ -236,8 +220,8 @@ class DuckDBJobStore:
                     JobStatus.FAILED.value,
                     JobStatus.CANCELED.value,
                 ],
-            )
-            return count
+            ).fetchone()
+            return int(res[0]) if res else 0
 
     def close(self) -> None:
         """Close the underlying DuckDB connection."""
@@ -432,6 +416,7 @@ class MemoryJobStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._jobs: dict[str, JobRecord] = {}
+        self._queued_job_ids: dict[str, None] = {}
 
     def create_job(self, request: dict[str, Any]) -> str:
         """Create a new job record and return its identifier."""
@@ -453,6 +438,7 @@ class MemoryJobStore:
                 "cancel_requested": False,
                 "worker_id": None,
             }
+            self._queued_job_ids[job_id] = None
         return job_id
 
     def get_job(self, job_id: str) -> JobRecord | None:
@@ -472,14 +458,20 @@ class MemoryJobStore:
             job.update(cast(JobRecord, fields))
             job["updated_at"] = utc_now_iso()
 
+            if "status" in fields:
+                if fields["status"] == JobStatus.QUEUED.value:
+                    self._queued_job_ids[job_id] = None
+                else:
+                    self._queued_job_ids.pop(job_id, None)
+
     def claim_next_job(self, worker_id: str) -> JobRecord | None:
         """Claim the next queued job for a worker."""
         with self._lock:
-            queued = [job for job in self._jobs.values() if job["status"] == JobStatus.QUEUED.value]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            if not queued:
+            if not self._queued_job_ids:
                 return None
-            queued.sort(key=lambda job: job["created_at"])  # pyright: ignore[reportTypedDictNotRequiredAccess]
-            job = queued[0]
+            job_id = next(iter(self._queued_job_ids))
+            self._queued_job_ids.pop(job_id)
+            job = self._jobs[job_id]
             now = utc_now_iso()
             job["status"] = JobStatus.RUNNING.value
             job["started_at"] = now
@@ -525,6 +517,7 @@ class MemoryJobStore:
             ]
             for job_id in to_delete:
                 self._jobs.pop(job_id, None)
+                self._queued_job_ids.pop(job_id, None)
             return len(to_delete)
 
     def close(self) -> None:
