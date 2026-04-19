@@ -5,6 +5,7 @@ This module contains the `HuggingFaceAdapter`, which implements the `LLMProvider
 for interacting with Hugging Face Inference API (Serverless or TGI).
 """
 
+import asyncio
 import json
 from typing import Any
 
@@ -127,9 +128,9 @@ class HuggingFaceAdapter(LLMProvider):
         """Fetches available text-generation models from the Hub (top 20 by downloads)."""
         # Fetch top models to avoid listing thousands
         try:
-            # This is a synchronous call, might want to wrap in run_in_executor
-            # if blocking too long, but for this CLI tool it should be fine.
-            models = list_models(
+            # Offload the synchronous list_models call to a thread to avoid blocking the event loop.
+            models = await asyncio.to_thread(
+                list_models,
                 filter="text-generation-inference",  # Models compatible with TGI/Inference API
                 sort="downloads",
                 direction=-1,
