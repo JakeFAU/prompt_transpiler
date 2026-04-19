@@ -1,7 +1,9 @@
 import time
+
 from prompt_transpiler.jobs.store import MemoryJobStore
 
-def run_benchmark():
+
+def run_benchmark() -> None:
     store = MemoryJobStore()
 
     print("Creating jobs...")
@@ -15,6 +17,7 @@ def run_benchmark():
     end = time.time()
 
     print(f"Time to claim 100 jobs out of 100000: {end - start:.4f} seconds")
+
 
 if __name__ == "__main__":
     run_benchmark()
