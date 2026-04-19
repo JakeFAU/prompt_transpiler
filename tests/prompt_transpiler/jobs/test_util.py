@@ -31,8 +31,9 @@ def test_utc_now_iso() -> None:
 def test_generate_job_id() -> None:
     """Test generating a random job ID."""
     job_id = generate_job_id()
+    job_id_length = 32
     assert isinstance(job_id, str)
-    assert len(job_id) == 32
+    assert len(job_id) == job_id_length
     # Ensure it's valid hex
     int(job_id, 16)
 
@@ -73,46 +74,55 @@ def test_parse_bool_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_parse_int_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test parsing integer environment variables."""
+    default_int = 42
+    valid_int_1 = 100
+    valid_int_2 = -5
+
     # Test missing env var
     monkeypatch.delenv("TEST_INT", raising=False)
-    assert parse_int_env("TEST_INT", 42) == 42
+    assert parse_int_env("TEST_INT", default_int) == default_int
 
     # Test empty string
     monkeypatch.setenv("TEST_INT", "   ")
-    assert parse_int_env("TEST_INT", 42) == 42
+    assert parse_int_env("TEST_INT", default_int) == default_int
 
     # Test valid ints
-    monkeypatch.setenv("TEST_INT", "100")
-    assert parse_int_env("TEST_INT", 42) == 100
-    monkeypatch.setenv("TEST_INT", "-5")
-    assert parse_int_env("TEST_INT", 42) == -5
+    monkeypatch.setenv("TEST_INT", str(valid_int_1))
+    assert parse_int_env("TEST_INT", default_int) == valid_int_1
+    monkeypatch.setenv("TEST_INT", str(valid_int_2))
+    assert parse_int_env("TEST_INT", default_int) == valid_int_2
 
     # Test invalid int
     monkeypatch.setenv("TEST_INT", "not_an_int")
-    assert parse_int_env("TEST_INT", 42) == 42
+    assert parse_int_env("TEST_INT", default_int) == default_int
 
 
 def test_parse_float_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test parsing float environment variables."""
+    default_float = 3.14
+    valid_float_1 = 100.5
+    valid_float_2 = -5.25
+    valid_float_3 = 10.0
+
     # Test missing env var
     monkeypatch.delenv("TEST_FLOAT", raising=False)
-    assert parse_float_env("TEST_FLOAT", 3.14) == 3.14
+    assert parse_float_env("TEST_FLOAT", default_float) == default_float
 
     # Test empty string
     monkeypatch.setenv("TEST_FLOAT", "   ")
-    assert parse_float_env("TEST_FLOAT", 3.14) == 3.14
+    assert parse_float_env("TEST_FLOAT", default_float) == default_float
 
     # Test valid floats
-    monkeypatch.setenv("TEST_FLOAT", "100.5")
-    assert parse_float_env("TEST_FLOAT", 3.14) == 100.5
-    monkeypatch.setenv("TEST_FLOAT", "-5.25")
-    assert parse_float_env("TEST_FLOAT", 3.14) == -5.25
+    monkeypatch.setenv("TEST_FLOAT", str(valid_float_1))
+    assert parse_float_env("TEST_FLOAT", default_float) == valid_float_1
+    monkeypatch.setenv("TEST_FLOAT", str(valid_float_2))
+    assert parse_float_env("TEST_FLOAT", default_float) == valid_float_2
     monkeypatch.setenv("TEST_FLOAT", "10")
-    assert parse_float_env("TEST_FLOAT", 3.14) == 10.0
+    assert parse_float_env("TEST_FLOAT", default_float) == valid_float_3
 
     # Test invalid float
     monkeypatch.setenv("TEST_FLOAT", "not_a_float")
-    assert parse_float_env("TEST_FLOAT", 3.14) == 3.14
+    assert parse_float_env("TEST_FLOAT", default_float) == default_float
 
 
 @patch("prompt_transpiler.jobs.util.time.sleep")
@@ -124,22 +134,23 @@ def test_sleep_ms(mock_sleep) -> None:
 
 def test_run_coroutine_sync() -> None:
     """Test running an async coroutine from sync code."""
+    expected_result = 42
 
     async def simple_coro() -> int:
         await asyncio.sleep(0.01)
-        return 42
+        return expected_result
 
     # Test with no existing event loop
     with patch("asyncio.get_event_loop", side_effect=RuntimeError):
         result = run_coroutine_sync(simple_coro())
-        assert result == 42
+        assert result == expected_result
 
     # Test with existing but not running event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         result = run_coroutine_sync(simple_coro())
-        assert result == 42
+        assert result == expected_result
     finally:
         loop.close()
         asyncio.set_event_loop(None)
@@ -151,7 +162,7 @@ def test_run_coroutine_sync() -> None:
 
         with patch("asyncio.new_event_loop") as mock_new_event_loop:
             mock_new_loop = mock_new_event_loop.return_value
-            mock_new_loop.run_until_complete.return_value = 42
+            mock_new_loop.run_until_complete.return_value = expected_result
 
             result = run_coroutine_sync(simple_coro())
-            assert result == 42
+            assert result == expected_result
