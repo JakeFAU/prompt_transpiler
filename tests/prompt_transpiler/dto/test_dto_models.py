@@ -127,20 +127,39 @@ class TestIntermediateRepresentation:
         assert "spec" in excinfo.value.messages
 
 
-def test_prompt_payload_serialization():
-    payload = PromptPayload(
-        messages=[
-            Message(role="system", content="You are a helpful assistant."),
-            Message(role="user", content="Hello!"),
-        ],
-        response_format={"type": "json_object"},
-    )
-    schema = PromptPayloadSchema()
-    data = schema.dump(payload)
-    assert data["messages"][0]["role"] == "system"
-    assert data["response_format"]["type"] == "json_object"
+class TestPromptPayload:
+    def test_prompt_payload_serialization(self):
+        payload = PromptPayload(
+            messages=[
+                Message(role="system", content="You are a helpful assistant."),
+                Message(role="user", content="Hello!"),
+            ],
+            response_format={"type": "json_object"},
+        )
+        schema = PromptPayloadSchema()
+        data = schema.dump(payload)
+        assert data["messages"][0]["role"] == "system"
+        assert data["messages"][0]["content"] == "You are a helpful assistant."
+        assert data["messages"][1].get("role") == "user"
+        assert data["messages"][1].get("content") == "Hello!"
+        assert data["response_format"]["type"] == "json_object"
 
-    loaded = schema.load(data)
-    assert isinstance(loaded, PromptPayload)
-    expected_message_count = 2
-    assert len(loaded.messages) == expected_message_count
+        loaded = schema.load(data)
+        assert isinstance(loaded, PromptPayload)
+        expected_count = 2
+        assert len(loaded.messages) == expected_count
+        assert loaded.messages[0].role == "system"
+        assert loaded.messages[0].content == "You are a helpful assistant."
+        assert loaded.messages[1].role == "user"
+        assert loaded.messages[1].content == "Hello!"
+        assert loaded.response_format == {"type": "json_object"}
+
+    def test_prompt_payload_full_text(self):
+        payload = PromptPayload(
+            messages=[
+                Message(role="system", content="You are a helpful assistant."),
+                Message(role="user", content="Hello!"),
+            ]
+        )
+        expected = "system: You are a helpful assistant.\nuser: Hello!"
+        assert payload.full_text == expected
