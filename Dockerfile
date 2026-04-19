@@ -2,7 +2,7 @@
 #
 # Prompt Compiler API (APIFlask) + OpenTelemetry launcher
 #
-# - Uses Poetry for deps
+# - Uses uv for deps
 # - Runs the API via "prompt-compiler-api"
 # - Wraps runtime with: opentelemetry-instrument ...
 # - Secrets are provided as environment variables (no files baked into image)
@@ -37,30 +37,27 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # System deps for building wheels (duckdb, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install Poetry (pinned-ish)
-ENV POETRY_VERSION=2.1.4 \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=false
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
 
-RUN pip install "poetry==${POETRY_VERSION}"
+RUN pip install uv
 
 # Copy dependency manifests and README first for better layer caching
-COPY pyproject.toml poetry.lock* README.md /app/
+COPY pyproject.toml uv.lock README.md /app/
 
-# Install runtime deps only (exclude dev/test/docs groups) without installing the project.
-# If your Poetry version doesn't support --only main, use: --without dev,test,docs
-RUN poetry install --only main --no-ansi --no-root
+# Install runtime deps only (exclude optional extras) without installing the project.
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Copy the rest of the source
 COPY . /app
 
 # Install the project package now that the source is present.
-RUN poetry install --only main --no-ansi
+RUN uv sync --frozen --no-dev
 
 ############################
 # 2) Runtime
@@ -68,12 +65,11 @@ RUN poetry install --only main --no-ansi
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
-# Copy installed site-packages + scripts from builder
-COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 RUN chmod +x /app/entrypoint.sh
 

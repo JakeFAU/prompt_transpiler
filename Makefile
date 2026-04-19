@@ -1,17 +1,17 @@
 .PHONY: install test lint format clean
 
 install:
-	poetry install
+	uv sync --extra dev --extra test
 
 test:
-	poetry run pytest
+	uv run pytest
 
 lint:
-	poetry run ruff check .
-	poetry run mypy src
+	uv run ruff check .
+	uv run mypy src
 
 format:
-	poetry run ruff format .
+	uv run ruff format .
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache build dist
