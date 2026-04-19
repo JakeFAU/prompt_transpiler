@@ -1,10 +1,10 @@
 """Typed models for compile job status and payloads."""
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TypedDict
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """Lifecycle states for a compile job."""
 
     QUEUED = "queued"
