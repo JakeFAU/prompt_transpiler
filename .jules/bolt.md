@@ -1,0 +1,1 @@
+## 2024-05-18 - [Optimization] Replace set literal in loop with module-level frozenset **Learning:** Set literal instantiation inside list comprehensions and loops adds noticeable overhead. Defining it as a module-level frozenset dramatically reduces execution time for O(1) membership checks. **Action:** Pre-compute sets and immutable collections outside loops where possible.
