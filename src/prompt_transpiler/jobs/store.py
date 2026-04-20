@@ -143,7 +143,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -316,7 +316,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -561,6 +561,20 @@ def _row_to_record(row: tuple[Any, ...]) -> JobRecord:
 
 def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
     """Convert update fields into a SQL clause and parameter list."""
+    allowed_columns = {
+        "status",
+        "request_json",
+        "result_json",
+        "error_json",
+        "created_at",
+        "updated_at",
+        "started_at",
+        "completed_at",
+        "stage",
+        "progress_json",
+        "cancel_requested",
+        "worker_id",
+    }
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():
@@ -571,6 +585,8 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
             encoded_value = json_dumps(value)
         if key == "cancel_requested":
             encoded_value = 1 if value else 0
+        if db_key not in allowed_columns:
+            raise ValueError(f"Invalid column name: {db_key}")
         columns.append(f"{db_key} = ?")
         values.append(encoded_value)
     return ", ".join(columns), values
