@@ -25,6 +25,7 @@ def test_json_loads_invalid_json():
     with pytest.raises(json.JSONDecodeError):
         json_loads('{"key": ')
 
+
 def test_parse_int_env(monkeypatch):
     expected = 42
     assert parse_int_env("MISSING", expected) == expected
@@ -38,6 +39,7 @@ def test_parse_int_env(monkeypatch):
     expected = 42
     assert parse_int_env("INVALID", expected) == expected
 
+
 def test_parse_float_env(monkeypatch):
     expected = 3.14
     assert parse_float_env("MISSING", expected) == expected
@@ -50,6 +52,7 @@ def test_parse_float_env(monkeypatch):
     monkeypatch.setenv("INVALID", "abc")
     expected = 3.14
     assert parse_float_env("INVALID", expected) == expected
+
 
 def test_parse_bool_env(monkeypatch):
     assert parse_bool_env("MISSING", True) is True
