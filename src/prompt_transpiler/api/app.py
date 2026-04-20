@@ -117,7 +117,7 @@ app = create_app(start_worker_flag=False)
 
 def main() -> None:
     """Run the API server using Flask's development runner."""
-    host = os.getenv("HOST", "0.0.0.0")
+    host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "8080"))
     env_name = os.getenv("PROMPT_TRANSPILER_ENV", os.getenv("PROMPT_COMPILER_ENV", "dev"))
     debug = env_name.lower() == "dev"
