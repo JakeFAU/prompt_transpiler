@@ -108,3 +108,18 @@ async def test_available_models(mock_hf_client, mock_list_models):
     assert "model1" in models
     assert "model2" in models
     mock_list_models.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_available_models_exception_handling(mock_hf_client, mock_list_models):
+    """
+    Test that available_models handles exceptions gracefully.
+    This simulates a network timeout or Hugging Face Hub outage.
+    """
+    mock_list_models.side_effect = Exception("Hugging Face Hub is down")
+
+    adapter = HuggingFaceAdapter()
+    models = await adapter.available_models()
+
+    assert models == []
+    mock_list_models.assert_called_once()
