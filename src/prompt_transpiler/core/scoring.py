@@ -229,8 +229,22 @@ class LLMAdjudicator(IJudge, BaseRole):
 
     async def evaluate(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
         """
-        Runs the evaluation and returns 0.0 (legacy return).
-        The component scores are updated on the Candidate object.
+        Runs the evaluation against the baseline and mutates the candidate object.
+
+        This method contacts an LLM to compare the baseline response against the
+        candidate response. The component scores (e.g., primary intent, tone, constraints)
+        are updated directly on the `CandidatePrompt` object passed as an argument.
+
+        Args:
+            candidate: The newly generated prompt and its test response.
+            original: The original prompt and its baseline response.
+
+        Returns:
+            Always returns 0.0 for legacy reasons. The Pipeline uses the `Strategy`
+            pattern to calculate the final score from the components.
+
+        Raises:
+            EvaluationError: If the Judge fails to return valid JSON or processing fails.
         """
         attributes = self._get_base_attributes()
         if self.scoring_algorithm:
