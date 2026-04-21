@@ -24,6 +24,23 @@ except ImportError:  # pragma: no cover - optional dependency
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.util import generate_job_id, json_dumps, json_loads, utc_now_iso
 
+ALLOWED_COLUMNS = frozenset(
+    {
+        "status",
+        "request_json",
+        "result_json",
+        "error_json",
+        "created_at",
+        "updated_at",
+        "started_at",
+        "completed_at",
+        "stage",
+        "progress_json",
+        "cancel_requested",
+        "worker_id",
+    }
+)
+
 
 class JobStore(Protocol):
     """Protocol defining the storage interface for transpile jobs."""
@@ -143,7 +160,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -316,7 +333,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -571,6 +588,9 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
             encoded_value = json_dumps(value)
         if key == "cancel_requested":
             encoded_value = 1 if value else 0
+
+        if db_key not in ALLOWED_COLUMNS:
+            raise ValueError(f"Invalid column name for update: {db_key}")
         columns.append(f"{db_key} = ?")
         values.append(encoded_value)
     return ", ".join(columns), values
