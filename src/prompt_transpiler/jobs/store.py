@@ -24,6 +24,10 @@ except ImportError:  # pragma: no cover - optional dependency
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.util import generate_job_id, json_dumps, json_loads, utc_now_iso
 
+_COMPLETED_JOB_STATUSES = frozenset(
+    {JobStatus.SUCCEEDED.value, JobStatus.FAILED.value, JobStatus.CANCELED.value}
+)
+
 
 class JobStore(Protocol):
     """Protocol defining the storage interface for transpile jobs."""
@@ -509,11 +513,7 @@ class MemoryJobStore:
                 if (completed_at := job.get("completed_at")) is not None
                 and completed_at < cutoff_iso
                 and job["status"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-                in {
-                    JobStatus.SUCCEEDED.value,
-                    JobStatus.FAILED.value,
-                    JobStatus.CANCELED.value,
-                }
+                in _COMPLETED_JOB_STATUSES
             ]
             for job_id in to_delete:
                 self._jobs.pop(job_id, None)
