@@ -24,6 +24,27 @@ except ImportError:  # pragma: no cover - optional dependency
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.util import generate_job_id, json_dumps, json_loads, utc_now_iso
 
+_ALLOWED_UPDATE_KEYS = frozenset(
+    {
+        "status",
+        "request",
+        "request_json",
+        "result",
+        "result_json",
+        "error",
+        "error_json",
+        "created_at",
+        "updated_at",
+        "started_at",
+        "completed_at",
+        "stage",
+        "progress",
+        "progress_json",
+        "cancel_requested",
+        "worker_id",
+    }
+)
+
 
 class JobStore(Protocol):
     """Protocol defining the storage interface for transpile jobs."""
@@ -143,7 +164,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -316,7 +337,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -564,6 +585,9 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():
+        if key not in _ALLOWED_UPDATE_KEYS:
+            # Security: Prevent SQL injection via invalid column names
+            raise ValueError(f"Invalid update key: {key}")
         db_key = key
         encoded_value = value
         if key in {"request", "result", "error", "progress"}:
