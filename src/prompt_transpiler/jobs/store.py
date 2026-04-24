@@ -143,7 +143,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -316,7 +316,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -559,11 +559,35 @@ def _row_to_record(row: tuple[Any, ...]) -> JobRecord:
     }
 
 
+ALLOWED_UPDATE_COLUMNS = frozenset(
+    {
+        "status",
+        "request",
+        "request_json",
+        "result",
+        "result_json",
+        "error",
+        "error_json",
+        "created_at",
+        "updated_at",
+        "started_at",
+        "completed_at",
+        "stage",
+        "progress",
+        "progress_json",
+        "cancel_requested",
+        "worker_id",
+    }
+)
+
+
 def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
     """Convert update fields into a SQL clause and parameter list."""
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():
+        if key not in ALLOWED_UPDATE_COLUMNS:
+            raise ValueError(f"Invalid column name: {key}")
         db_key = key
         encoded_value = value
         if key in {"request", "result", "error", "progress"}:

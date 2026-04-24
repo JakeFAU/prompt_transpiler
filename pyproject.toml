@@ -131,3 +131,8 @@ fail_under = 85
 members = [
     "3.13",
 ]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9.4",
+]
