@@ -14,6 +14,15 @@ class JobStatus(StrEnum):
     CANCELED = "canceled"
 
 
+COMPLETED_STATUSES = frozenset(
+    {
+        JobStatus.SUCCEEDED.value,
+        JobStatus.FAILED.value,
+        JobStatus.CANCELED.value,
+    }
+)
+
+
 class JobError(TypedDict, total=False):
     """Structured error details for failed jobs."""
 
