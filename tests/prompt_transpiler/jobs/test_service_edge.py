@@ -1,7 +1,10 @@
-import pytest
 from typing import Any, cast
-from prompt_transpiler.jobs.service import JobService
+
+import pytest
+
 from prompt_transpiler.jobs.models import JobRecord
+from prompt_transpiler.jobs.service import JobService
+
 
 def test_run_job_store_update_exception_bubbles_up(mocker: Any) -> None:
     """
