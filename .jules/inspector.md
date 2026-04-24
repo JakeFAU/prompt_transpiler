@@ -1,0 +1,1 @@
+## 2025-02-21 - [JobService State Machine] **Edge Case:** [Job store disconnects or raises an exception during pre-compile state machine transition] **Learning:** [The exception correctly bubbles up, preventing the compiler from executing and maintaining consistency] **Action:** [Continue verifying exception boundaries before and after critical job executions]
