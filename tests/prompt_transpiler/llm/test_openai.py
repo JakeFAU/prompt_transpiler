@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from prompt_transpiler.llm.openai import OpenAIAdapter
+from prompt_transpiler.llm.openai import OpenAIAdapter, _prepare_strict_schema
 
 
 @pytest.fixture(autouse=True)
@@ -126,6 +126,5 @@ def test_prepare_strict_schema_empty_properties():
     as None instead of a dictionary. This exposes an unhandled assumption in the codebase
     that node["properties"] will always have a .keys() method.
     """
-    from prompt_transpiler.llm.openai import _prepare_strict_schema
     with pytest.raises(AttributeError):
         _prepare_strict_schema({"type": "object", "properties": None})
