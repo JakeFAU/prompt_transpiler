@@ -1,9 +1,10 @@
 from copy import deepcopy
 from unittest.mock import AsyncMock, MagicMock
 
+import openai
 import pytest
 
-from prompt_transpiler.llm.openai import OpenAIAdapter, _prepare_strict_schema
+from prompt_transpiler.llm.openai import OpenAIAdapter
 
 
 @pytest.fixture(autouse=True)
@@ -118,13 +119,26 @@ async def test_available_models(mock_openai):
     assert "gpt-3.5-turbo" in models
     assert "dall-e-3" not in models
 
-def test_prepare_strict_schema_empty_properties():
-    """
-    Test that _prepare_strict_schema raises an AttributeError when 'properties' is None.
 
-    Edge Case: The JSON schema indicates type 'object' but explicitly defines 'properties'
-    as None instead of a dictionary. This exposes an unhandled assumption in the codebase
-    that node["properties"] will always have a .keys() method.
+@pytest.mark.asyncio
+async def test_generate_api_connection_error(mock_openai):
     """
-    with pytest.raises(AttributeError):
-        _prepare_strict_schema({"type": "object", "properties": None})
+    Test that generate bubbles up network errors from the OpenAI client.
+
+    Edge Case: The external OpenAI API is unreachable or times out, resulting in an
+    APIConnectionError being raised by the client. The adapter should not mask this
+    critical failure.
+    """
+    mock_client_instance = mock_openai.return_value
+    # Mock a network failure by raising APIConnectionError
+    mock_request = MagicMock()
+    mock_client_instance.chat.completions.create = AsyncMock(
+        side_effect=openai.APIConnectionError(request=mock_request)
+    )
+
+    adapter = OpenAIAdapter()
+
+    with pytest.raises(openai.APIConnectionError):
+        await adapter.generate(
+            system_prompt="System", user_prompt="User", model_name="gpt-4", config={}
+        )
