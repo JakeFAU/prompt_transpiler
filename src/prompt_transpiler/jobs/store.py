@@ -24,6 +24,18 @@ except ImportError:  # pragma: no cover - optional dependency
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.util import generate_job_id, json_dumps, json_loads, utc_now_iso
 
+# Performance Optimization: Sets containing Enum attributes aren't optimized
+# into frozensets by Python at compile-time. We define this module-level
+# constant to avoid O(n) set instantiation and attribute lookups inside hot
+# loops (e.g., during MemoryJobStore.purge_expired comprehensions).
+_COMPLETED_STATUSES = frozenset(
+    {
+        JobStatus.SUCCEEDED.value,
+        JobStatus.FAILED.value,
+        JobStatus.CANCELED.value,
+    }
+)
+
 
 class JobStore(Protocol):
     """Protocol defining the storage interface for transpile jobs."""
@@ -508,12 +520,7 @@ class MemoryJobStore:
                 for job_id, job in self._jobs.items()
                 if (completed_at := job.get("completed_at")) is not None
                 and completed_at < cutoff_iso
-                and job["status"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-                in {
-                    JobStatus.SUCCEEDED.value,
-                    JobStatus.FAILED.value,
-                    JobStatus.CANCELED.value,
-                }
+                and job["status"] in _COMPLETED_STATUSES  # pyright: ignore[reportTypedDictNotRequiredAccess]
             ]
             for job_id in to_delete:
                 self._jobs.pop(job_id, None)
