@@ -117,3 +117,15 @@ async def test_available_models(mock_openai):
     assert "gpt-4" in models
     assert "gpt-3.5-turbo" in models
     assert "dall-e-3" not in models
+
+def test_prepare_strict_schema_empty_properties():
+    """
+    Test that _prepare_strict_schema raises an AttributeError when 'properties' is None.
+
+    Edge Case: The JSON schema indicates type 'object' but explicitly defines 'properties'
+    as None instead of a dictionary. This exposes an unhandled assumption in the codebase
+    that node["properties"] will always have a .keys() method.
+    """
+    from prompt_transpiler.llm.openai import _prepare_strict_schema
+    with pytest.raises(AttributeError):
+        _prepare_strict_schema({"type": "object", "properties": None})
