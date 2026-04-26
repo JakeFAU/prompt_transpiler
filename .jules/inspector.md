@@ -1,0 +1,1 @@
+## 2024-04-26 - [Job failure boundary] **Edge Case:** Compiler exception handling **Learning:** The job service safely traps any `Exception` from the compiler and transitions the job to `FAILED` with a structured `JobError`. **Action:** Verify error state transitions when simulating network/timeout exceptions from the LLM compiler.
