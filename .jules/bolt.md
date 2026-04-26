@@ -1,0 +1,3 @@
+## 2024-04-26 - Add @lru_cache to LLM Provider Factory
+**Learning:** Applying `@lru_cache` to a global factory function (`get_llm_provider`) can significantly reduce redundant adapter instantiations (e.g. from 1.0s to 0.01s for 100 calls). However, this introduces test pollution if tests mock configuration values (like API keys) because subsequent tests will receive the stale cached instance from the first test.
+**Action:** When caching global factory functions, always add an `autouse=True` fixture in `conftest.py` that calls `<function>.cache_clear()` to ensure tests remain fully isolated. Also, ensure any scratchpad/benchmarking scripts are deleted before requesting code review or submitting.
