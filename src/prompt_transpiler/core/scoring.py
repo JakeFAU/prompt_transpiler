@@ -1,5 +1,4 @@
-"""
-Scoring algorithms and LLM-based evaluation for prompt quality.
+"""Scoring algorithms and LLM-based evaluation for prompt quality.
 
 This module implements the Judge role's scoring strategies, providing multiple
 algorithms to evaluate how well a transpiled prompt matches the original intent:
@@ -44,8 +43,7 @@ TIE_SCORE = VERDICT_SCORE["tie"]
 
 @define
 class PairwisePreferenceAlgorithm(ScoringAlgorithm):
-    """
-    Default strategy.
+    """Default strategy.
 
     Uses mechanically-derived scores from pairwise verdicts:
     candidate win = 1.0, tie = 0.5, baseline win = 0.0.
@@ -73,8 +71,7 @@ class PairwisePreferenceAlgorithm(ScoringAlgorithm):
 
 @define
 class WeightedScoreAlgorithm(ScoringAlgorithm):
-    """
-    Standard scoring strategy.
+    """Standard scoring strategy.
 
     Weights:
     - Primary Intent: 50%
@@ -111,8 +108,7 @@ class WeightedScoreAlgorithm(ScoringAlgorithm):
 
 @define
 class GeometricMeanAlgorithm(ScoringAlgorithm):
-    """
-    Strict 'Compiler Mode'. If any component is weak, the whole score tanks.
+    """Strict 'Compiler Mode'. If any component is weak, the whole score tanks.
     Best for code generation, JSON formatting, or strict constraints.
     """
 
@@ -136,8 +132,7 @@ class GeometricMeanAlgorithm(ScoringAlgorithm):
 
 @define
 class PenaltyAlgorithm(ScoringAlgorithm):
-    """
-    Linter style. Starts at 100% and deducts points for failures.
+    """Linter style. Starts at 100% and deducts points for failures.
     Good for ensuring compliance without demanding perfection.
     """
 
@@ -167,9 +162,7 @@ class PenaltyAlgorithm(ScoringAlgorithm):
 
 @define
 class DynamicScoringAlgorithm(ScoringAlgorithm):
-    """
-    Adapts based on the prompt type detected by the Decompiler.
-    """
+    """Adapts based on the prompt type detected by the Decompiler."""
 
     def calculate_score(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
         # Check metadata from the Decompiler step (you'll need to populate this in decompiler.py)
@@ -206,7 +199,16 @@ _ALGORITHM_CLASSES: dict[str, type[ScoringAlgorithm]] = {
 
 
 def get_scoring_algorithm(name: str) -> ScoringAlgorithm:
-    """Factory to get scoring algorithm by name."""
+    """Factory to get scoring algorithm by name.
+
+    Args:
+        name: The name of the scoring algorithm to instantiate.
+
+    Returns:
+        An instance of the requested ScoringAlgorithm, defaulting to
+        PairwisePreferenceAlgorithm if unknown.
+
+    """
     # Default to pairwise if unknown
     cls = _ALGORITHM_CLASSES.get(name.lower(), PairwisePreferenceAlgorithm)
     return cls()
@@ -214,9 +216,7 @@ def get_scoring_algorithm(name: str) -> ScoringAlgorithm:
 
 @define
 class LLMAdjudicator(IJudge, BaseRole):
-    """
-    Judge Role: Measures the quality of the response using an LLM.
-    """
+    """Judge Role: Measures the quality of the response using an LLM."""
 
     provider_name: str = "openai"
     model_name: str = "gpt-4o"
@@ -228,9 +228,20 @@ class LLMAdjudicator(IJudge, BaseRole):
         return "judge"
 
     async def evaluate(self, candidate: CandidatePrompt, original: OriginalPrompt) -> float:
-        """
-        Runs the evaluation and returns 0.0 (legacy return).
-        The component scores are updated on the Candidate object.
+        """Run the evaluation and update component scores on the Candidate object.
+
+        Args:
+            candidate: The transpiled prompt candidate to evaluate.
+            original: The original prompt providing context and baseline response.
+
+        Returns:
+            Always returns 0.0 (legacy return behavior). The Pipeline calculates
+            the final score using the selected Strategy.
+
+        Raises:
+            EvaluationError: If the LLM judge returns invalid JSON that cannot
+                be parsed.
+
         """
         attributes = self._get_base_attributes()
         if self.scoring_algorithm:
