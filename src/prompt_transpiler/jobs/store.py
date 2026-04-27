@@ -21,8 +21,17 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     _duckdb = None  # type: ignore[assignment]
 
+
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.util import generate_job_id, json_dumps, json_loads, utc_now_iso
+
+_COMPLETED_JOB_STATUSES = frozenset(
+    {
+        JobStatus.SUCCEEDED.value,
+        JobStatus.FAILED.value,
+        JobStatus.CANCELED.value,
+    }
+)
 
 
 class JobStore(Protocol):
@@ -508,12 +517,7 @@ class MemoryJobStore:
                 for job_id, job in self._jobs.items()
                 if (completed_at := job.get("completed_at")) is not None
                 and completed_at < cutoff_iso
-                and job["status"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
-                in {
-                    JobStatus.SUCCEEDED.value,
-                    JobStatus.FAILED.value,
-                    JobStatus.CANCELED.value,
-                }
+                and job["status"] in _COMPLETED_JOB_STATUSES  # pyright: ignore[reportTypedDictNotRequiredAccess]
             ]
             for job_id in to_delete:
                 self._jobs.pop(job_id, None)
