@@ -1,0 +1,1 @@
+## 2024-05-24 - [Avoid O(n) overhead on dynamic set lookups] **Learning:** Sets containing attribute lookups (e.g., Enum values) are not optimized into `frozenset` at compile time, leading to creation overhead on every loop iteration. **Action:** Define these as module-level `frozenset` constants for O(1) membership testing.
