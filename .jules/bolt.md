@@ -1,0 +1,1 @@
+## 2024-03-24 - [Memory Journal] **Learning:** The memory journal entry mentioned applying `@lru_cache` to globally accessed factory functions like `get_llm_provider` and adding an `autouse=True` fixture in `conftest.py` that calls `<function_name>.cache_clear()` for test isolation. **Action:** Apply this to `get_llm_provider`.
