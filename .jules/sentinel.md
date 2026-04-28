@@ -1,0 +1,4 @@
+## 2024-05-24 - [CRITICAL] Fix SQL Injection vector in job store update
+**Vulnerability:** A SQL injection vector was present in `src/prompt_transpiler/jobs/store.py` where dynamic column names based on user-provided `fields` dictionaries were inserted into an `UPDATE` query via an f-string (`f"UPDATE compile_jobs SET {columns} WHERE job_id = ?"`).
+**Learning:** Standard SQL parameterization (`?` or `%s`) cannot be used for SQL identifiers like table or column names. Thus, constructing dynamic updates inherently risks injection if the dictionary keys aren't strictly validated.
+**Prevention:** Use `<string>.isidentifier()` to validate that any string intended to be used as a dynamically constructed column or table name is a safe, strictly alpha-numeric (plus underscore) string, and raise an exception if the validation fails.
