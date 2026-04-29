@@ -161,3 +161,62 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_malformed_json_types(mock_model):
+    """
+    Edge Case: The LLM returns syntactically valid JSON, but the fields contain entirely
+    incorrect data types (e.g., lists, booleans, or nested dicts instead of expected strings).
+    The system should gracefully degrade to default values (e.g., TIE_SCORE = 0.5)
+    without crashing due to TypeErrors.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        response_data = {
+            "primary_intent_verdict": [],  # triggers pairwise path but is malformed
+            "primary_intent_confidence": True,
+            "tone_voice_verdict": 123,
+            "tone_voice_confidence": {},
+            "constraint_verdicts": [
+                {"constraint": "c1", "verdict": [], "confidence": True},
+                "not a dict",
+                {"constraint": 123, "verdict": "candidate"},
+            ],
+            "feedback_hint": ["Not a string"],
+        }
+        mock_provider.generate.return_value = LLMResponse(
+            content=json.dumps(response_data),
+            model_name="gpt-4o",
+            usage=TokenUsage(total_tokens=100),
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+            model=mock_model,
+            response="base",
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+            model=mock_model,
+            response="cand_resp",
+        )
+
+        score = await judge.evaluate(candidate, original)
+
+        assert score == 0.0
+        assert candidate.primary_intent_verdict is None
+        assert candidate.primary_intent_score == TIE_SCORE
+        assert candidate.tone_voice_verdict is None
+        assert candidate.tone_voice_score == TIE_SCORE
+
+        # Validates how constraint dictionaries parse when malformed:
+        # - The first dictionary has a list for "verdict", parsing to None, skipped.
+        # - The second element is a string, skipped because it's not a dict.
+        # - The third has 123 for "constraint" (becomes "123") and "candidate" for verdict.
+        assert candidate.constraint_verdicts == {"123": "candidate"}
+        assert candidate.constraint_scores == {"123": 1.0}
+
+        assert candidate.feedback == str(["Not a string"])
