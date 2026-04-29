@@ -1,0 +1,1 @@
+## 2026-04-29 - Memoize LLM provider factory **Learning:** The `get_llm_provider` factory function creates new instances of LLM adapters (which instantiate async HTTP clients) on every call. **Action:** Applied `@lru_cache` to memoize the instances and added a `conftest.py` fixture to clear the cache between tests to maintain isolation.
