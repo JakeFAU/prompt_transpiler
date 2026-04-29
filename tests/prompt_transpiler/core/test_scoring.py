@@ -181,7 +181,7 @@ async def test_llm_adjudicator_malformed_json_types(mock_model):
             "constraint_verdicts": [
                 {"constraint": "c1", "verdict": [], "confidence": True},
                 "not a dict",
-                {"constraint": 123, "verdict": "candidate"}
+                {"constraint": 123, "verdict": "candidate"},
             ],
             "feedback_hint": ["Not a string"],
         }
