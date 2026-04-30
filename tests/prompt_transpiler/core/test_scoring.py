@@ -159,7 +159,7 @@ async def test_llm_adjudicator_malformed_json_data_types(mock_model):
             "tone_voice_verdict": 123,  # Unexpected number
             # Unexpected dict structure (expecting list of dicts)
             "constraint_verdicts": {"c1": "candidate"},
-            "feedback_hint": None  # Unexpected null
+            "feedback_hint": None,  # Unexpected null
         }
 
         mock_provider.generate.return_value = LLMResponse(
