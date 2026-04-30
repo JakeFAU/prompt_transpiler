@@ -14,7 +14,6 @@ def clear_llm_provider_cache():
     get_llm_provider.cache_clear()
 
 
-
 @pytest.fixture
 def provider_data():
     return {
