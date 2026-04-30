@@ -1,0 +1,3 @@
+## 2024-04-30 - Memoizing LLM Provider Factory
+**Learning:** `get_llm_provider` was re-instantiating the adapter for every single generation call. While Python object creation is fast, setting up clients (like the async `openai.AsyncOpenAI` client) can be expensive due to SSL context, connection pool setup, etc. In particular, adding `@functools.lru_cache(maxsize=None)` memoizes these so that a specific provider adapter is only instantiated once.
+**Action:** Always check factory functions that return heavy clients/adapters; memoizing them can significantly improve performance. Additionally, always remember to add an `autouse=True` fixture in `conftest.py` calling `<func>.cache_clear()` to ensure cache isolation during testing.
