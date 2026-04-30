@@ -157,7 +157,8 @@ async def test_llm_adjudicator_malformed_json_data_types(mock_model):
             "primary_intent_verdict": ["candidate"],  # Unexpected list
             "primary_intent_confidence": True,  # Unexpected boolean
             "tone_voice_verdict": 123,  # Unexpected number
-            "constraint_verdicts": {"c1": "candidate"},  # Unexpected dict structure (expecting list of dicts)
+            # Unexpected dict structure (expecting list of dicts)
+            "constraint_verdicts": {"c1": "candidate"},
             "feedback_hint": None  # Unexpected null
         }
 
