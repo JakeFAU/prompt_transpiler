@@ -161,3 +161,55 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_malformed_json_types(mock_model):
+    """
+    Test that LLMAdjudicator gracefully degrades to TIE_SCORE and None
+    when the LLM returns JSON with unexpected data types (e.g., lists or booleans
+    instead of strings for verdicts/confidences).
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        response_data = {
+            "primary_intent_verdict": ["candidate"],  # Unexpected list
+            "primary_intent_confidence": {"level": "strong"},  # Unexpected dict
+            "tone_voice_verdict": True,  # Unexpected boolean
+            "tone_voice_confidence": 123,  # Unexpected int
+            "constraint_verdicts": [{"constraint": ["c1"], "verdict": 42, "confidence": False}],
+            "feedback_hint": ["Not a string"],
+        }
+        mock_provider.generate.return_value = LLMResponse(
+            content=json.dumps(response_data),
+            model_name="gpt-4o",
+            usage=TokenUsage(total_tokens=100),
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+            model=mock_model,
+            response="base",
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+            model=mock_model,
+            response="cand_resp",
+        )
+
+        score = await judge.evaluate(candidate, original)
+
+        assert score == 0.0
+        assert candidate.primary_intent_verdict is None
+        assert candidate.primary_intent_score == TIE_SCORE
+        assert candidate.tone_voice_verdict is None
+        assert candidate.tone_voice_score == TIE_SCORE
+
+        assert candidate.primary_intent_confidence is None
+        assert candidate.tone_voice_confidence is None
+
+        assert candidate.constraint_scores == {}
+        assert candidate.constraint_verdicts == {}
+        assert candidate.feedback == "['Not a string']"
