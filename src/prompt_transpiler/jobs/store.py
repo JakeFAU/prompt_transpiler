@@ -143,7 +143,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -316,7 +316,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -449,6 +449,9 @@ class MemoryJobStore:
 
     def update_job(self, job_id: str, **fields: Any) -> None:
         """Update fields on a job record."""
+        for key in fields:
+            if not key.isidentifier():
+                raise ValueError(f"Invalid column name: {key}")
         if not fields:
             return
         with self._lock:
@@ -564,6 +567,8 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():
+        if not key.isidentifier():
+            raise ValueError(f"Invalid column name: {key}")
         db_key = key
         encoded_value = value
         if key in {"request", "result", "error", "progress"}:
