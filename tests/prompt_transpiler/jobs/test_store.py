@@ -49,6 +49,13 @@ def _assert_cancel_requested(store):
     assert updated["cancel_requested"] is True
 
 
+def test_update_job_invalid_identifier():
+    store = MemoryJobStore()
+    job_id = store.create_job({"raw_prompt": "hello"})
+    with pytest.raises(ValueError, match="Invalid column name: invalid key"):
+        store.update_job(job_id, **{"invalid key": "value"})
+
+
 def test_memory_store_flow():
     store = MemoryJobStore()
     _assert_basic_flow(store)
