@@ -236,6 +236,9 @@ def _build_role_overrides(overrides: dict[str, Any]) -> dict[str, Any]:
     return resolved
 
 
+_ZERO_USAGE = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+
 def _effective_role_settings(overrides: dict[str, Any]) -> dict[str, Any]:
     return {
         "architect": {
@@ -275,12 +278,19 @@ def _token_usage_delta(
 ) -> dict[str, dict[str, int]]:
     delta: dict[str, dict[str, int]] = {}
     for model, usage in after.items():
-        prior = before.get(model, {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
-        model_delta = {
-            "prompt_tokens": max(0, usage["prompt_tokens"] - prior["prompt_tokens"]),
-            "completion_tokens": max(0, usage["completion_tokens"] - prior["completion_tokens"]),
-            "total_tokens": max(0, usage["total_tokens"] - prior["total_tokens"]),
-        }
-        if any(model_delta.values()):
-            delta[model] = model_delta
+        prior = before.get(model, _ZERO_USAGE)
+
+        # Performance optimization: extract deltas into local variables
+        # and explicitly check for > 0 before allocating the dictionary,
+        # avoiding unnecessary object allocation overhead
+        p_diff = max(0, usage["prompt_tokens"] - prior["prompt_tokens"])
+        c_diff = max(0, usage["completion_tokens"] - prior["completion_tokens"])
+        t_diff = max(0, usage["total_tokens"] - prior["total_tokens"])
+
+        if p_diff > 0 or c_diff > 0 or t_diff > 0:
+            delta[model] = {
+                "prompt_tokens": p_diff,
+                "completion_tokens": c_diff,
+                "total_tokens": t_diff,
+            }
     return delta
