@@ -1,5 +1,7 @@
 """Factory for constructing LLM provider adapters."""
 
+from functools import lru_cache
+
 from prompt_transpiler.llm.anthropic import AnthropicAdapter
 from prompt_transpiler.llm.base import LLMProvider
 from prompt_transpiler.llm.gemini import GeminiAdapter
@@ -7,6 +9,9 @@ from prompt_transpiler.llm.huggingface import HuggingFaceAdapter
 from prompt_transpiler.llm.openai import OpenAIAdapter
 
 
+# Memoize expensive provider initialization (e.g. OpenAI clients) to reduce overhead
+# across multiple transpiler passes (Pilot, Judge, etc.)
+@lru_cache
 def get_llm_provider(provider_name: str) -> LLMProvider:
     """
     Factory function to get an LLM provider instance based on the provider name.
