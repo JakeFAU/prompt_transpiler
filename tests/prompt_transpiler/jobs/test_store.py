@@ -1,7 +1,7 @@
 import pytest
 
 from prompt_transpiler.jobs.models import JobStatus
-from prompt_transpiler.jobs.store import MemoryJobStore, SQLiteJobStore
+from prompt_transpiler.jobs.store import MemoryJobStore, SQLiteJobStore, _to_update_clause
 
 
 def _assert_basic_flow(store):
@@ -54,6 +54,11 @@ def test_memory_store_flow():
     _assert_basic_flow(store)
     _assert_purge(store)
     _assert_cancel_requested(store)
+
+
+def test_invalid_column_name_sql_injection():
+    with pytest.raises(ValueError, match="Invalid column name: invalid column"):
+        _to_update_clause({"invalid column": 1})
 
 
 def test_sqlite_store_flow(tmp_path):
