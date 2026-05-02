@@ -144,6 +144,54 @@ async def test_llm_adjudicator_invalid_json(mock_model):
 
 
 @pytest.mark.asyncio
+async def test_llm_adjudicator_malformed_json_types(mock_model):
+    """
+    Test edge case where LLM returns valid JSON but the types are completely wrong
+    (e.g. lists or booleans instead of strings). The Adjudicator should degrade gracefully
+    and return default TIE_SCOREs instead of raising TypeError.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        # Return valid JSON but with invalid data types for expected strings
+        response_data = {
+            "primary_intent_verdict": ["not", "a", "string"],
+            "primary_intent_confidence": True,
+            "tone_voice_verdict": {"wrong": "type"},
+            "tone_voice_confidence": 123,
+            "constraint_verdicts": [{"constraint": ["bad"], "verdict": False, "confidence": None}],
+            "feedback_hint": ["also", "wrong"],
+        }
+        mock_provider.generate.return_value = LLMResponse(
+            content=json.dumps(response_data),
+            model_name="gpt-4o",
+            usage=TokenUsage(total_tokens=100),
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+            model=mock_model,
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+            model=mock_model,
+        )
+
+        score = await judge.evaluate(candidate, original)
+
+        assert score == 0.0
+        assert candidate.primary_intent_verdict is None
+        assert candidate.primary_intent_score == TIE_SCORE
+        assert candidate.tone_voice_verdict is None
+        assert candidate.tone_voice_score == TIE_SCORE
+        assert candidate.primary_intent_confidence is None
+        assert candidate.constraint_scores == {}
+        assert candidate.constraint_verdicts == {}
+        assert candidate.constraint_confidences is None
+
+
+@pytest.mark.asyncio
 async def test_llm_adjudicator_failure(mock_model):
     with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
