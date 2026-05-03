@@ -269,18 +269,23 @@ def _token_usage_snapshot() -> dict[str, dict[str, int]]:
     }
 
 
+_ZERO_USAGE = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+
 def _token_usage_delta(
     before: dict[str, dict[str, int]],
     after: dict[str, dict[str, int]],
 ) -> dict[str, dict[str, int]]:
     delta: dict[str, dict[str, int]] = {}
     for model, usage in after.items():
-        prior = before.get(model, {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
-        model_delta = {
-            "prompt_tokens": max(0, usage["prompt_tokens"] - prior["prompt_tokens"]),
-            "completion_tokens": max(0, usage["completion_tokens"] - prior["completion_tokens"]),
-            "total_tokens": max(0, usage["total_tokens"] - prior["total_tokens"]),
-        }
-        if any(model_delta.values()):
-            delta[model] = model_delta
+        prior = before.get(model, _ZERO_USAGE)
+        p_delta = max(0, usage["prompt_tokens"] - prior["prompt_tokens"])
+        c_delta = max(0, usage["completion_tokens"] - prior["completion_tokens"])
+        t_delta = max(0, usage["total_tokens"] - prior["total_tokens"])
+        if p_delta > 0 or c_delta > 0 or t_delta > 0:
+            delta[model] = {
+                "prompt_tokens": p_delta,
+                "completion_tokens": c_delta,
+                "total_tokens": t_delta,
+            }
     return delta
