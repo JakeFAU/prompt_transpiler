@@ -24,6 +24,22 @@ except ImportError:  # pragma: no cover - optional dependency
 from prompt_transpiler.jobs.models import JobError, JobRecord, JobStatus
 from prompt_transpiler.jobs.util import generate_job_id, json_dumps, json_loads, utc_now_iso
 
+_ALLOWED_UPDATE_FIELDS = frozenset(
+    {
+        "status",
+        "request",
+        "result",
+        "error",
+        "updated_at",
+        "started_at",
+        "completed_at",
+        "stage",
+        "progress",
+        "cancel_requested",
+        "worker_id",
+    }
+)
+
 
 class JobStore(Protocol):
     """Protocol defining the storage interface for transpile jobs."""
@@ -143,7 +159,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -189,7 +205,7 @@ class DuckDBJobStore:
         self.update_job(
             job_id,
             status=JobStatus.SUCCEEDED.value,
-            result_json=json_dumps(result),
+            result=result,
             completed_at=utc_now_iso(),
             stage="completed",
         )
@@ -199,7 +215,7 @@ class DuckDBJobStore:
         self.update_job(
             job_id,
             status=JobStatus.FAILED.value,
-            error_json=json_dumps(error),
+            error=error,
             completed_at=utc_now_iso(),
             stage="failed",
         )
@@ -316,7 +332,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -363,7 +379,7 @@ class SQLiteJobStore:
         self.update_job(
             job_id,
             status=JobStatus.SUCCEEDED.value,
-            result_json=json_dumps(result),
+            result=result,
             completed_at=utc_now_iso(),
             stage="completed",
         )
@@ -373,7 +389,7 @@ class SQLiteJobStore:
         self.update_job(
             job_id,
             status=JobStatus.FAILED.value,
-            error_json=json_dumps(error),
+            error=error,
             completed_at=utc_now_iso(),
             stage="failed",
         )
@@ -451,6 +467,11 @@ class MemoryJobStore:
         """Update fields on a job record."""
         if not fields:
             return
+
+        invalid_keys = set(fields.keys()) - _ALLOWED_UPDATE_FIELDS
+        if invalid_keys:
+            raise ValueError(f"Invalid update fields: {invalid_keys}")
+
         with self._lock:
             job = self._jobs.get(job_id)
             if not job:
@@ -561,6 +582,10 @@ def _row_to_record(row: tuple[Any, ...]) -> JobRecord:
 
 def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
     """Convert update fields into a SQL clause and parameter list."""
+    invalid_keys = set(fields.keys()) - _ALLOWED_UPDATE_FIELDS
+    if invalid_keys:
+        raise ValueError(f"Invalid update fields: {invalid_keys}")
+
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():
@@ -571,6 +596,10 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
             encoded_value = json_dumps(value)
         if key == "cancel_requested":
             encoded_value = 1 if value else 0
+
+        if not db_key.isidentifier():
+            raise ValueError(f"Invalid column name: {db_key}")
+
         columns.append(f"{db_key} = ?")
         values.append(encoded_value)
     return ", ".join(columns), values
