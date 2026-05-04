@@ -162,6 +162,7 @@ async def test_llm_adjudicator_failure(mock_model):
         assert score == 0.0
         # Should log error but not raise, based on implementation
 
+
 @pytest.mark.asyncio
 async def test_llm_adjudicator_unexpected_json_values_degrades_gracefully(mock_model):
     """
@@ -179,7 +180,7 @@ async def test_llm_adjudicator_unexpected_json_values_degrades_gracefully(mock_m
             "tone_voice_confidence": 123,
             "constraint_verdicts": [
                 "this should be a dict",
-                {"constraint": {"not": "string"}, "verdict": False, "confidence": None}
+                {"constraint": {"not": "string"}, "verdict": False, "confidence": None},
             ],
             "feedback_hint": ["List", "instead", "of", "string"],
         }
