@@ -1,0 +1,1 @@
+## 2024-05-24 - LLM Adjudicator JSON Types **Edge Case:** Tested LLMAdjudicator with unexpectedly malformed JSON data types (lists/booleans instead of expected strings/dicts) **Learning:** The system gracefully degrades malformed types to TIE_SCORE instead of raising exceptions **Action:** Test other LLM-parsing modules for similar graceful degradation vs. exception raising
