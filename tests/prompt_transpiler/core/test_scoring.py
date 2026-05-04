@@ -161,3 +161,61 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_unexpected_json_values_degrades_gracefully(mock_model):
+    """
+    Edge Case: The LLM returns a valid JSON structure, but the data types of the values
+    are completely unexpected (e.g., lists, booleans, or dicts instead of strings).
+    This tests the boundary of JSON parsing and ensures the adjudicator does not crash
+    but gracefully degrades verdicts to None and scores to TIE_SCORE.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        response_data = {
+            "primary_intent_verdict": ["not", "a", "string"],
+            "primary_intent_confidence": True,
+            "tone_voice_verdict": {"nested": "dict"},
+            "tone_voice_confidence": 123,
+            "constraint_verdicts": [
+                "this should be a dict",
+                {"constraint": {"not": "string"}, "verdict": False, "confidence": None},
+            ],
+            "feedback_hint": ["List", "instead", "of", "string"],
+        }
+        mock_provider.generate.return_value = LLMResponse(
+            content=json.dumps(response_data),
+            model_name="gpt-4o",
+            usage=TokenUsage(total_tokens=100),
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+            model=mock_model,
+            response="base",
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+            model=mock_model,
+            response="cand_resp",
+        )
+
+        score = await judge.evaluate(candidate, original)
+
+        assert score == 0.0
+        assert candidate.primary_intent_verdict is None
+        assert candidate.primary_intent_score == TIE_SCORE
+        assert candidate.primary_intent_confidence is None
+
+        assert candidate.tone_voice_verdict is None
+        assert candidate.tone_voice_score == TIE_SCORE
+        assert candidate.tone_voice_confidence is None
+
+        assert candidate.constraint_verdicts == {}
+        assert candidate.constraint_scores == {}
+        assert candidate.constraint_confidences is None
+
+        assert candidate.feedback == "['List', 'instead', 'of', 'string']"
