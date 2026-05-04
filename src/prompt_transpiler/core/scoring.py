@@ -231,6 +231,16 @@ class LLMAdjudicator(IJudge, BaseRole):
         """
         Runs the evaluation and returns 0.0 (legacy return).
         The component scores are updated on the Candidate object.
+
+        Args:
+            candidate: The candidate prompt being evaluated.
+            original: The original prompt serving as the baseline.
+
+        Returns:
+            0.0 as a legacy float return.
+
+        Raises:
+            EvaluationError: If the judge returns invalid JSON or fails evaluation.
         """
         attributes = self._get_base_attributes()
         if self.scoring_algorithm:
