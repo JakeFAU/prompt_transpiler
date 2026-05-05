@@ -161,3 +161,54 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_malformed_json_types_degrades_gracefully(mock_model):
+    """
+    Edge Case: The LLM returns valid JSON but the values have unexpected types
+    (lists or dicts instead of strings/floats).
+    This tests that the JSON parsing and applying of logic doesn't crash but degrades safely.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        # Valid JSON, but values are lists/dicts instead of strings
+        malformed_json = """
+        {
+            "primary_intent_verdict": ["candidate"],
+            "tone_voice_verdict": {"verdict": "baseline"},
+            "constraint_verdicts": [
+                {
+                    "constraint": "rule1",
+                    "verdict": false,
+                    "confidence": ["high"]
+                },
+                "not a dict"
+            ]
+        }
+        """
+        mock_provider.generate.return_value = LLMResponse(
+            content=malformed_json, model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
+
+        await judge.evaluate(candidate, original)
+
+        # _normalize_verdict returns None for non-strings.
+        # _verdict_to_score(None) defaults to 0.5 (TIE_SCORE)
+        assert candidate.primary_intent_score == TIE_SCORE
+        assert candidate.tone_voice_score == TIE_SCORE
+
+        # When `_normalize_verdict` evaluates a boolean false, it returns None.
+        # However, since `rule1` has `verdict: false`, and `verdict` evaluates as None,
+        # the loop continues (`if constraint is None or verdict is None: continue`),
+        # meaning "rule1" doesn't get added to the `constraint_scores` dictionary at all.
+        assert "rule1" not in candidate.constraint_scores
