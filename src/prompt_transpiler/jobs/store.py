@@ -564,6 +564,8 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
     columns: list[str] = []
     values: list[Any] = []
     for key, value in fields.items():
+        if not key.isidentifier():
+            raise ValueError(f"Invalid field name: {key}")
         db_key = key
         encoded_value = value
         if key in {"request", "result", "error", "progress"}:
