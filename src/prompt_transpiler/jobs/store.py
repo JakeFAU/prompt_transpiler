@@ -569,6 +569,8 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
         if key in {"request", "result", "error", "progress"}:
             db_key = f"{key}_json"
             encoded_value = json_dumps(value)
+        if not db_key.isidentifier():
+            raise ValueError(f"Invalid column name: {db_key}")
         if key == "cancel_requested":
             encoded_value = 1 if value else 0
         columns.append(f"{db_key} = ?")
