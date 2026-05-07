@@ -1,0 +1,1 @@
+## 2026-05-07 - LLMAdjudicator Malformed JSON Types **Edge Case:** Tested LLM generating valid JSON arrays or booleans instead of objects/dicts. **Learning:** The system correctly falls back to returning 0.0, avoiding a crash when unexpected types lack a .get() method. **Action:** Ensure to test JSON parsers with unexpected primitive types, not just malformed JSON strings.
