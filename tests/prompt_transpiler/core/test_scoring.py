@@ -144,6 +144,33 @@ async def test_llm_adjudicator_invalid_json(mock_model):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("invalid_json", ["[]", "true", "123", '"string"'])
+async def test_evaluate_json_not_dict(mock_model, invalid_json):
+    """
+    Edge Case: The LLM returns valid JSON, but the top-level structure is not a dictionary.
+    LLMAdjudicator incorrectly assumes parsed data has 'in' and '.get()' behavior.
+    The catch-all exception block should prevent a crash and return 0.0.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = LLMResponse(
+            content=invalid_json, model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
+
+        score = await judge.evaluate(candidate, original)
+        assert score == 0.0
+
+
+@pytest.mark.asyncio
 async def test_llm_adjudicator_failure(mock_model):
     with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
