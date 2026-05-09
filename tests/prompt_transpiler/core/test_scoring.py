@@ -161,3 +161,31 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_unexpected_json_type(mock_model):
+    """
+    Tests the edge case where the LLM returns valid JSON, but it parses to
+    a list rather than the expected dictionary structure. This ensures the
+    LLMAdjudicator safely catches the resulting AttributeError and returns 0.0.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        # LLM returns a JSON list instead of an object
+        mock_provider.generate.return_value = LLMResponse(
+            content="[1, 2, 3]", model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
+
+        score = await judge.evaluate(candidate, original)
+        assert score == 0.0
+        mock_provider.generate.assert_called_once()
