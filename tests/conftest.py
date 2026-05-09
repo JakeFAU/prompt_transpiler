@@ -6,6 +6,13 @@ from prompt_transpiler.dto.models import (
     PromptStyle,
     Provider,
 )
+from prompt_transpiler.llm.factory import get_llm_provider
+
+
+@pytest.fixture(autouse=True)
+def clear_llm_provider_cache():
+    get_llm_provider.cache_clear()
+    yield
 
 
 @pytest.fixture
