@@ -1,0 +1,4 @@
+## 2026-05-10 - Dynamic SQL Injection via Unvalidated Column Names
+**Vulnerability:** The `_to_update_clause` function in `src/prompt_transpiler/jobs/store.py` dynamically generated SQL `UPDATE` queries using an f-string to interpolate dictionary keys as column names. Because SQL injection via column names cannot be mitigated by standard query parameterization (`?`), this allowed arbitrary SQL execution if an attacker controlled the keys.
+**Learning:** Even internal helper methods must validate their inputs when performing raw string interpolation for SQL queries, especially when bridging from dynamic data structures (like dictionaries) to structured DB layers.
+**Prevention:** Always use `<string>.isidentifier()` to validate any dynamically provided column names or identifiers before appending them to SQL strings. Append `# nosec B608` to explicitly signal that the dynamic string has been properly secured.
