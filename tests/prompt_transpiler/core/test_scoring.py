@@ -144,6 +144,34 @@ async def test_llm_adjudicator_invalid_json(mock_model):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("json_response", ["[]", "true", "42", '"string"'])
+async def test_evaluate_unexpected_json_type(mock_model, json_response):
+    """
+    Edge Case: The LLM returns valid JSON, but it parses to an unexpected type
+    (like a list, bool, int, or string) instead of a dictionary.
+    This verifies that the system catches the resulting TypeError or AttributeError
+    when it attempts to treat the parsed JSON as a dict, and returns a safe 0.0 score.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = LLMResponse(
+            content=json_response, model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
+
+        score = await judge.evaluate(candidate, original)
+        assert score == 0.0
+
+
+@pytest.mark.asyncio
 async def test_llm_adjudicator_failure(mock_model):
     with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
         mock_provider = AsyncMock()
