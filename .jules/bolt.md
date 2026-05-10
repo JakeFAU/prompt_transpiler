@@ -1,0 +1,1 @@
+## 2024-05-10 - Cache get_llm_provider **Learning:** get_llm_provider in llm/factory.py initializes a new client object every time it's called, causing significant overhead (e.g., openai.AsyncOpenAI reads settings and performs initialization). **Action:** Apply @functools.cache to get_llm_provider and add an autouse fixture in conftest.py to clear the cache for tests.
