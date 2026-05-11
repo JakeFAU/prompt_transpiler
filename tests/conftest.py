@@ -6,6 +6,13 @@ from prompt_transpiler.dto.models import (
     PromptStyle,
     Provider,
 )
+from prompt_transpiler.llm.factory import get_llm_provider
+
+
+@pytest.fixture(autouse=True)
+def clear_llm_provider_cache():
+    """Clear the LLM provider factory cache before each test to ensure isolation."""
+    get_llm_provider.cache_clear()
 
 
 @pytest.fixture
