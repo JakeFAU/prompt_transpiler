@@ -1,5 +1,4 @@
-"""
-Job service layer for transpile job orchestration.
+"""Job service layer for transpile job orchestration.
 
 This module provides the business logic for managing transpile jobs, including:
 - Job enqueueing and status management

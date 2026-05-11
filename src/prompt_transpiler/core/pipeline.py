@@ -67,8 +67,7 @@ def _default_diff_agent() -> IDiffAgent:
 
 @define
 class PromptTranspilerPipeline:
-    """
-    The main orchestration engine for the Prompt Transpiler.
+    """The main orchestration engine for the Prompt Transpiler.
 
     Uses Dependency Injection for all roles to allow swapping strategies.
     """
@@ -120,8 +119,8 @@ class PromptTranspilerPipeline:
     async def _annotate_diff(
         self, candidate: CandidatePrompt | None, original: OriginalPrompt
     ) -> CandidatePrompt | None:
-        """
-        Run the diff agent to summarize how the candidate differs from the original prompt.
+        """Run the diff agent to summarize how the candidate differs from the original prompt.
+
         Failures are swallowed to avoid blocking transpilation.
         """
         if candidate is None:
@@ -156,8 +155,7 @@ class PromptTranspilerPipeline:
         source_provider: str = "openai",
         target_provider: str = "openai",
     ) -> CandidatePrompt:
-        """
-        Execute the prompt transpilation pipeline.
+        """Execute the prompt transpilation pipeline.
 
         Args:
             raw_prompt: The original prompt text or PromptPayload to be converted.
@@ -166,6 +164,15 @@ class PromptTranspilerPipeline:
             max_retries: Optional override for maximum optimization attempts.
             source_provider: Provider for source model (default: openai).
             target_provider: Provider for target model (default: openai).
+
+        Returns:
+            CandidatePrompt: The optimized prompt, containing the generated text,
+                scores, verdicts, and attempt history.
+
+        Raises:
+            RuntimeError: If the pipeline fails to generate any candidate prompt.
+            Exception: If an underlying pipeline execution step fails unexpectedly.
+
         """
         if max_retries is None:
             max_retries = self.max_retries
@@ -321,7 +328,25 @@ async def transpile_pipeline(  # noqa: PLR0913
     score_threshold: float | None = None,
     scoring_algo: str | None = None,
 ) -> CandidatePrompt:
-    """Entry point for the CLI or API."""
+    """Execute the prompt transpilation pipeline from the CLI or API.
+
+    Args:
+        raw_text: The original prompt text or PromptPayload to be converted.
+        source_model_name: Name of the model the original prompt was designed for.
+        target_model_name: Name of the model to optimize for.
+        source_provider: Provider for the source model. Defaults to "openai".
+        target_provider: Provider for the target model. Defaults to "openai".
+        max_retries: Optional override for maximum optimization attempts.
+        score_threshold: Optional override for the minimum acceptable score.
+        scoring_algo: Optional override for the scoring algorithm (e.g., 'pairwise').
+
+    Returns:
+        CandidatePrompt: The final optimized prompt candidate.
+
+    Raises:
+        RuntimeError: If the pipeline fails to generate any candidate prompt.
+
+    """
     kwargs: dict[str, Any] = {}
     if max_retries is not None:
         kwargs["max_retries"] = max_retries
