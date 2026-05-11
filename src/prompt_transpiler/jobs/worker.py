@@ -1,5 +1,4 @@
-"""
-Background worker for processing transpile jobs.
+"""Background worker for processing transpile jobs.
 
 This module provides a threaded worker pool that continuously polls for queued
 jobs and processes them asynchronously. Key features:

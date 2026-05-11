@@ -1,5 +1,4 @@
-"""
-Job storage backends for transpile job persistence.
+"""Job storage backends for transpile job persistence.
 
 This module provides multiple job store implementations:
 
