@@ -1,0 +1,1 @@
+## 2025-05-11 - Fix SQL Injection in JobStore update_job **Vulnerability:** SQL injection via f-strings dynamically adding dict keys to query **Learning:** Blindly formatting dictionary keys as column names in UPDATE allows injections **Prevention:** Always validate dynamic keys via .isidentifier() and parameterize values
