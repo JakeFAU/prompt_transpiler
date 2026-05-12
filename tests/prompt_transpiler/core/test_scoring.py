@@ -161,3 +161,39 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_unexpected_json_type(mock_model):
+    """
+    Test that LLMAdjudicator handles the edge case where the LLM returns
+    valid JSON, but the parsed object is an unexpected type (e.g., a list
+    instead of a dict). The outer evaluate() method should catch the resulting
+    AttributeError/TypeError and safely return 0.0.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        # Mocking external boundary: LLM provider returns a valid JSON list instead of a dict
+        mock_provider.generate.return_value = LLMResponse(
+            content='["unexpected", "list"]',
+            model_name="gpt-4o",
+            usage=TokenUsage(total_tokens=100),
+        )
+        mock_get_provider.return_value = mock_provider
+
+        # Mocking the token collector to isolate the core logic
+        with patch("prompt_transpiler.core.scoring.token_collector.add"):
+            judge = LLMAdjudicator()
+            original = OriginalPrompt(
+                payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+                model=mock_model,
+            )
+            candidate = CandidatePrompt(
+                payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+                model=mock_model,
+            )
+
+            score = await judge.evaluate(candidate, original)
+
+            # Ensure the component safely catches the exception and returns the default score
+            assert score == 0.0
