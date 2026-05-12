@@ -6,6 +6,7 @@ from prompt_transpiler.dto.models import (
     PromptStyle,
     Provider,
 )
+from prompt_transpiler.llm.factory import get_llm_provider
 
 
 @pytest.fixture
@@ -97,3 +98,8 @@ def ir_full_data(ir_meta_data, ir_spec_data, ir_data_data):
         "spec": ir_spec_data,
         "data": ir_data_data,
     }
+
+
+@pytest.fixture(autouse=True)
+def clear_llm_provider_cache():
+    get_llm_provider.cache_clear()
