@@ -161,3 +161,35 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_malformed_json_type(mock_model):
+    """
+    Edge Case: The LLM Provider returns valid JSON, but it parses to a list
+    instead of the expected dictionary.
+
+    This verifies that when internal dictionary operations (like checking `in data`)
+    fail with a TypeError or AttributeError, the generic exception handler catches it and safely
+    returns 0.0 without crashing the pipeline.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        # Valid JSON, but not a dict
+        mock_provider.generate.return_value = LLMResponse(
+            content='["not", "a", "dict"]', model_name="gpt-4o", usage=TokenUsage(total_tokens=10)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        judge = LLMAdjudicator()
+        original = OriginalPrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="orig")]), model=mock_model
+        )
+        candidate = CandidatePrompt(
+            payload=PromptPayload(messages=[Message(role="user", content="cand")]), model=mock_model
+        )
+
+        score = await judge.evaluate(candidate, original)
+
+        # It should fail safely and return 0.0
+        assert score == 0.0
