@@ -143,7 +143,7 @@ class DuckDBJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
 
@@ -316,7 +316,7 @@ class SQLiteJobStore:
         columns, values = _to_update_clause(fields)
         with self._lock:
             self._conn.execute(
-                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",
+                f"UPDATE compile_jobs SET {columns} WHERE job_id = ?",  # nosec B608
                 [*values, job_id],
             )
             self._conn.commit()
@@ -569,6 +569,8 @@ def _to_update_clause(fields: dict[str, Any]) -> tuple[str, list[Any]]:
         if key in {"request", "result", "error", "progress"}:
             db_key = f"{key}_json"
             encoded_value = json_dumps(value)
+        if not db_key.isidentifier():
+            raise ValueError(f"Invalid column name for SQL generation: {db_key}")
         if key == "cancel_requested":
             encoded_value = 1 if value else 0
         columns.append(f"{db_key} = ?")
