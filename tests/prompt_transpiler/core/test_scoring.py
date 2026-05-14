@@ -161,3 +161,61 @@ async def test_llm_adjudicator_failure(mock_model):
         score = await judge.evaluate(candidate, original)
         assert score == 0.0
         # Should log error but not raise, based on implementation
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_json_list_response(mock_model):
+    """
+    Tests the edge case where the LLM returns a valid JSON string that parses
+    into a list instead of a dictionary. This triggers an AttributeError inside
+    _apply_numeric_scores when calling data.get(), which is safely caught.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = LLMResponse(
+            content="[]", model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        with patch("prompt_transpiler.core.scoring.token_collector.add"):
+            judge = LLMAdjudicator()
+            original = OriginalPrompt(
+                payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+                model=mock_model,
+            )
+            candidate = CandidatePrompt(
+                payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+                model=mock_model,
+            )
+
+            score = await judge.evaluate(candidate, original)
+            assert score == 0.0
+
+
+@pytest.mark.asyncio
+async def test_llm_adjudicator_json_boolean_response(mock_model):
+    """
+    Tests the edge case where the LLM returns a valid JSON boolean ("true")
+    which parses to a boolean. This triggers an AttributeError inside
+    _apply_numeric_scores when calling data.get(), which is safely caught.
+    """
+    with patch("prompt_transpiler.core.scoring.get_llm_provider") as mock_get_provider:
+        mock_provider = AsyncMock()
+        mock_provider.generate.return_value = LLMResponse(
+            content="true", model_name="gpt-4o", usage=TokenUsage(total_tokens=100)
+        )
+        mock_get_provider.return_value = mock_provider
+
+        with patch("prompt_transpiler.core.scoring.token_collector.add"):
+            judge = LLMAdjudicator()
+            original = OriginalPrompt(
+                payload=PromptPayload(messages=[Message(role="user", content="orig")]),
+                model=mock_model,
+            )
+            candidate = CandidatePrompt(
+                payload=PromptPayload(messages=[Message(role="user", content="cand")]),
+                model=mock_model,
+            )
+
+            score = await judge.evaluate(candidate, original)
+            assert score == 0.0
