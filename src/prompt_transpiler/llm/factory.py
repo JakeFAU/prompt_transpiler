@@ -1,5 +1,7 @@
 """Factory for constructing LLM provider adapters."""
 
+import functools
+
 from prompt_transpiler.llm.anthropic import AnthropicAdapter
 from prompt_transpiler.llm.base import LLMProvider
 from prompt_transpiler.llm.gemini import GeminiAdapter
@@ -7,6 +9,11 @@ from prompt_transpiler.llm.huggingface import HuggingFaceAdapter
 from prompt_transpiler.llm.openai import OpenAIAdapter
 
 
+# ⚡ Bolt Optimization: Cache the LLM provider factory.
+# Async LLM clients (like AsyncOpenAI) initialize heavy HTTP connection pools.
+# By caching the factory result, we reuse the client and its pool across requests,
+# significantly reducing connection latency and initialization overhead.
+@functools.cache
 def get_llm_provider(provider_name: str) -> LLMProvider:
     """
     Factory function to get an LLM provider instance based on the provider name.
