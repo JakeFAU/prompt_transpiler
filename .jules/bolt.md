@@ -1,0 +1,1 @@
+## 2026-05-15 - Cache Async LLM Clients **Learning:** Async LLM clients (like AsyncOpenAI) carry heavy initialization overhead and should be cached. **Action:** Apply @functools.cache to factory functions like get_llm_provider to prevent performance degradation.
